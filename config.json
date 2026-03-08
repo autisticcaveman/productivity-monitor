@@ -1,0 +1,11 @@
+{
+  "_readme": "Edit these values then run: python3 install.py",
+  "_sync_note": "sync_path can be any folder both machines access: Obsidian vault, Dropbox, OneDrive, network share, or leave blank to disable",
+
+  "data_dir": "",
+  "dashboard_port": 5555,
+  "poll_interval_seconds": 30,
+  "idle_threshold_seconds": 300,
+  "sync_enabled": false,
+  "sync_path": ""
+}

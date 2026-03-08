@@ -8,6 +8,7 @@ Background thread runs analysis every hour.
 
 import json
 import sqlite3
+import sys
 import threading
 import time
 from datetime import date, datetime, timedelta
@@ -16,7 +17,11 @@ from pathlib import Path
 from flask import Flask, jsonify, render_template
 
 BASE_DIR  = Path(__file__).parent.parent
-DB_PATH   = BASE_DIR / "data" / "activity.db"
+sys.path.insert(0, str(BASE_DIR))
+import config_loader
+
+_cfg      = config_loader.load()
+DB_PATH   = Path(_cfg["data_dir"]) / "activity.db"
 CATS_PATH = BASE_DIR / "categories.json"
 
 app = Flask(__name__)
@@ -322,4 +327,4 @@ def analysis_loop():
 if __name__ == "__main__":
     t = threading.Thread(target=analysis_loop, daemon=True)
     t.start()
-    app.run(host="127.0.0.1", port=5555, debug=False)
+    app.run(host="127.0.0.1", port=_cfg["dashboard_port"], debug=False)

@@ -2,28 +2,29 @@
 """
 Productivity Monitor Daemon
 Polls active application every 30 seconds, logs to SQLite.
-Requires Accessibility permission for Terminal/shell in System Settings.
+Cross-platform: macOS, Linux, Windows.
+Configure paths and settings in config.json.
 """
 
-import subprocess
 import sqlite3
 import json
 import time
-import re
 import logging
 import signal
 import sys
 from datetime import datetime
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+import config_loader
+import platform_utils
 
-DB_PATH      = DATA_DIR / "activity.db"
-CATS_PATH    = BASE_DIR / "categories.json"
-POLL_INTERVAL = 30  # seconds
-IDLE_THRESHOLD = 300  # 5 minutes
+_cfg           = config_loader.load()
+BASE_DIR       = Path(__file__).parent
+DATA_DIR       = Path(_cfg["data_dir"])
+DB_PATH        = DATA_DIR / "activity.db"
+CATS_PATH      = BASE_DIR / "categories.json"
+POLL_INTERVAL  = _cfg["poll_interval_seconds"]
+IDLE_THRESHOLD = _cfg["idle_threshold_seconds"]
 
 logging.basicConfig(
     filename=str(DATA_DIR / "monitor.log"),
@@ -40,50 +41,11 @@ def load_categories() -> dict:
 
 
 def get_active_app_and_window() -> tuple[str, str]:
-    """Return (app_name, window_title) via osascript / System Events."""
-    script = """
-    tell application "System Events"
-        try
-            set frontApp to first application process whose frontmost is true
-            set appName to name of frontApp
-            set windowTitle to ""
-            try
-                set windowTitle to name of first window of frontApp
-            end try
-            return appName & "|||" & windowTitle
-        on error
-            return "unknown|||"
-        end try
-    end tell
-    """
-    try:
-        r = subprocess.run(
-            ["osascript", "-e", script],
-            capture_output=True, text=True, timeout=5,
-        )
-        out = r.stdout.strip()
-        if "|||" in out:
-            app, win = out.split("|||", 1)
-            return app.strip(), win.strip()
-        return out or "unknown", ""
-    except Exception as exc:
-        logging.warning(f"get_active_app_and_window failed: {exc}")
-        return "unknown", ""
+    return platform_utils.get_active_app_and_window()
 
 
 def get_idle_seconds() -> float:
-    """Return seconds since last user input via ioreg HIDIdleTime."""
-    try:
-        r = subprocess.run(
-            ["ioreg", "-c", "IOHIDSystem"],
-            capture_output=True, text=True, timeout=5,
-        )
-        m = re.search(r'"HIDIdleTime"\s*=\s*(\d+)', r.stdout)
-        if m:
-            return int(m.group(1)) / 1_000_000_000
-    except Exception as exc:
-        logging.warning(f"get_idle_seconds failed: {exc}")
-    return 0.0
+    return platform_utils.get_idle_seconds()
 
 
 def categorize(app: str, window: str, cats: dict) -> str:
