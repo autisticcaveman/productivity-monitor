@@ -300,14 +300,15 @@ python3 /path/to/productivity-monitor/install.py --defaults
 
 | File | What it does |
 |------|-------------|
-| `monitor.py` | Background process — watches active apps every 30 seconds |
-| `dashboard/app.py` | Web server — dashboard at http://localhost:5555 |
-| `categories.json` | Maps app names to productivity categories |
+| `monitor.py` | Background process — watches active apps, reloads config/categories on every poll |
+| `dashboard/app.py` | Web server — dashboard + Settings API at http://localhost:5555 |
+| `categories.json` | Maps app names to productivity categories (editable via ⚙ Settings panel) |
 | `analyze.py` | Generates insights from activity data (runs hourly) |
 | `install.py` | Cross-platform installer (macOS / Linux / Windows) |
 | `uninstall.py` | Removes background services |
 | `sync.py` | Syncs recommendations via shared folder |
-| `deploy.sh` | Pushes code to a remote Mac via rsync + SSH |
+| `deploy.sh` | Pushes code to a remote Mac via rsync + SSH, runs `install.py --defaults` on remote |
 | `.deployrc` | Your remote host address and paths — **never committed to git** |
-| `config.json` | Settings: data directory, port, poll interval, sync path |
+| `config.json` | Settings: data directory, port, poll interval, sync path, auto_categorize |
+| `VERSION` | Current version number |
 | `data/` | Your activity database and logs — **never committed to git** |

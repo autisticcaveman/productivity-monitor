@@ -1,5 +1,7 @@
 # Productivity Monitor
 
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](VERSION)
+
 A lightweight, self-hosted activity monitor and productivity dashboard for your personal computer. Runs silently in the background, tracks which applications and windows you use, and presents the data in a local web dashboard with automatic insights and tool recommendations.
 
 No data leaves your machine. No accounts. No subscriptions.
@@ -22,6 +24,7 @@ No data leaves your machine. No accounts. No subscriptions.
   - Recommendations and insights panel
 - **Generates recommendations** hourly based on your actual usage patterns (distraction rate, context switching, peak hours, etc.)
 - **Syncs recommendations** between machines via any shared folder you already have
+- **Settings panel** (⚙ top-right of the dashboard) for live editing: theme, app categories, browser site rules, and auto-categorization — changes take effect on the next poll, no restart needed
 
 ---
 
@@ -125,7 +128,7 @@ The green pulsing dot in the top-left confirms the monitor is active. Data appea
 
 ## Configuration
 
-All settings live in `config.json` in the project root. Edit this file and re-run `python3 install.py` to apply changes.
+All settings live in `config.json` in the project root. Edit this file and re-run `python3 install.py` to apply changes, **or** use the ⚙ Settings panel in the dashboard — category and auto-categorize changes take effect on the next poll with no restart.
 
 ```json
 {
@@ -134,7 +137,8 @@ All settings live in `config.json` in the project root. Edit this file and re-ru
   "poll_interval_seconds":  30,
   "idle_threshold_seconds": 300,
   "sync_enabled":           false,
-  "sync_path":              ""
+  "sync_path":              "",
+  "auto_categorize":        true
 }
 ```
 
@@ -146,10 +150,13 @@ All settings live in `config.json` in the project root. Edit this file and re-ru
 | `idle_threshold_seconds` | Inactivity duration before a period is marked idle instead of active. |
 | `sync_enabled` | Set to `true` to enable recommendation syncing between machines. |
 | `sync_path` | Path to any shared folder (Obsidian vault, Dropbox, OneDrive, network share). |
+| `auto_categorize` | `true` (default) — automatically match apps to categories. Set `false` to pause all classification; everything logs as `uncategorized`. Editable live from the Settings panel. |
 
 ### Customising app categories
 
-Edit `categories.json` to control how apps are categorised. Each entry follows this structure:
+The easiest way is the **App Categories** tab in the Settings panel — click any category, add or remove app names, and save. Changes are written directly to `categories.json` and picked up on the next poll.
+
+To edit the file directly, each entry in `categories.json` follows this structure:
 
 ```json
 "deep_work": {
@@ -205,6 +212,36 @@ Pattern-based recommendations look for:
 - Context switching faster than 5 category changes per hour
 - Heavy browser use without a local docs solution
 - Your personal peak productivity hour
+
+### Settings Panel
+
+Click the **⚙** button in the top-right of the header to open the Settings panel. Four tabs:
+
+#### Appearance
+Switch between **Dark**, **Light**, and **System** (follows your OS) themes. Applied instantly and saved in your browser — no server round-trip.
+
+#### General
+**Auto-categorize apps** toggle. When on (default), the monitor automatically assigns apps to categories using name matching and browser window title rules. When off, every app logs as `uncategorized` — useful while setting up a clean custom ruleset. Saved to `config.json`; takes effect on the next poll (≤ 30 seconds by default).
+
+#### App Categories
+Live editor for the app-to-category mappings in `categories.json`:
+
+- Click any category pill to select it
+- Existing apps appear as removable tags — click **×** to remove
+- Type an app process name and press Enter or click **+ Add**
+- Click **Save Categories** — takes effect on the next monitor poll, no restart needed
+
+App names are partial, case-insensitive substring matches. `"code"` matches `"vscode"`, `"Code Helper"`, etc.
+
+#### Browser Rules
+Manage how browser tabs are classified by window title keywords. Rules are checked in order — first match wins.
+
+- Each rule card shows its keyword tags and the target category
+- **Delete** removes a rule; **↑ ↓** reorders priority
+- The **Add New Rule** form at the bottom takes a comma-separated keyword list and a target category
+- Click **Save All Rules** to write changes to `categories.json`
+
+Example: add `netsec, shodan, exploit-db` → `Deep Work` to count security research as productive time.
 
 ---
 
@@ -366,21 +403,24 @@ loginctl enable-linger $USER
 
 ```
 productivity-monitor/
-├── monitor.py          Background daemon — polls active app every 30s
+├── VERSION             Current version number (semver)
+├── monitor.py          Background daemon — polls active app every N seconds
+│                         reloads categories.json + config.json on every poll
 ├── dashboard/
-│   ├── app.py          Flask web server — dashboard at localhost:5555
+│   ├── app.py          Flask web server — dashboard + settings API
 │   └── templates/
-│       └── index.html  Dashboard UI (Bootstrap 5 + Chart.js, dark theme)
+│       └── index.html  Dashboard UI (Bootstrap 5 + Chart.js, dark/light/system theme)
+│                         includes ⚙ Settings panel (theme, categories, browser rules)
 ├── analyze.py          Hourly pattern analysis → generates recommendations
-├── categories.json     App → productivity category mappings (edit freely)
-├── config.json         Your settings — data path, port, sync, intervals
+├── categories.json     App → productivity category mappings (edit via Settings or directly)
+├── config.json         Your settings — data path, port, sync, intervals, auto_categorize
 ├── config_loader.py    Reads config.json, provides defaults per OS
 ├── platform_utils.py   OS abstraction — app detection + idle time
 ├── install.py          Cross-platform installer (macOS / Linux / Windows)
 ├── uninstall.py        Cross-platform service removal
 ├── sync.py             Recommendation sync via shared folder
 ├── requirements.txt    Python dependencies
-├── deploy.sh           Push to remote Mac via rsync + SSH (macOS/Linux)
+├── deploy.sh           Push to remote Mac via rsync + SSH (runs install.py --defaults)
 ├── vault-sync.sh       Legacy bash sync script (macOS only — use sync.py instead)
 ├── install.sh          Legacy bash installer (macOS only — use install.py instead)
 ├── uninstall.sh        Legacy bash uninstaller (macOS only — use uninstall.py instead)

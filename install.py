@@ -210,7 +210,7 @@ def setup_windows(data_dir: str):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    banner(f"Productivity Monitor Installer  [{OS}]")
+    banner(f"Productivity Monitor v1.1.0 — Installer  [{OS}]")
 
     print(f"\n  Python:   {PY}")
     print(f"  Platform: {platform.version()[:60]}")
@@ -235,14 +235,16 @@ def main():
 
     # ── Write config.json ─────────────────────────────────────────────────────
     cfg = {
-        "_readme":              "Edit these values and re-run install.py to reconfigure",
-        "_sync_note":           "sync_path can be any folder both machines can read/write",
-        "data_dir":             data_dir,
-        "dashboard_port":       int(port),
+        "_readme":               "Edit these values and re-run install.py to reconfigure — or use the dashboard Settings panel (⚙ top-right)",
+        "_sync_note":            "sync_path can be any folder both machines can read/write",
+        "_auto_cat_note":        "auto_categorize: false stops all name-matching — everything logs as uncategorized until re-enabled",
+        "data_dir":              data_dir,
+        "dashboard_port":        int(port),
         "poll_interval_seconds": int(poll),
         "idle_threshold_seconds": int(idle),
-        "sync_enabled":         want_sync,
-        "sync_path":            sync_path,
+        "sync_enabled":          want_sync,
+        "sync_path":             sync_path,
+        "auto_categorize":       True,
     }
     cfg_path = BASE_DIR / "config.json"
     with open(cfg_path, "w") as f:

@@ -238,17 +238,23 @@ def run():
     init_db()
     seed_recommendations()
 
-    cats = load_categories()
-
     while True:
         try:
+            # Reload on every poll so live edits to categories.json / config.json
+            # take effect without restarting the daemon.
+            cats     = load_categories()
+            live_cfg = config_loader.load()
+            auto_cat = live_cfg.get("auto_categorize", True)
+
             app, window = get_active_app_and_window()
             idle = get_idle_seconds()
 
             if idle > IDLE_THRESHOLD:
                 category = "idle"
-            else:
+            elif auto_cat:
                 category = categorize(app, window, cats)
+            else:
+                category = "uncategorized"
 
             log_activity(app, window, category, idle)
             logging.debug(f"{app} | {window[:60]} | {category} | idle={idle:.0f}s")

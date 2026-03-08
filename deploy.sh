@@ -76,10 +76,10 @@ rsync -az --progress \
   "$REMOTE_HOST:$REMOTE_PATH/"
 echo "  ✓ Files synced"
 
-# ── 4. Run install.sh on remote ───────────────────────────────────────────────
+# ── 4. Run install.py on remote ───────────────────────────────────────────────
 echo ""
-echo "▸ Running install.sh on remote..."
-ssh -t "$REMOTE_HOST" "cd '$REMOTE_PATH' && bash install.sh"
+echo "▸ Running install.py on remote..."
+ssh -t "$REMOTE_HOST" "cd '$REMOTE_PATH' && python3 install.py --defaults"
 
 # ── 5. Export recommendations to vault so remote can import them ──────────────
 echo ""
@@ -88,7 +88,7 @@ python3 "$SCRIPT_DIR/sync.py" export
 echo "  ✓ Recommendations exported to vault"
 echo ""
 echo "  On the remote machine, run:"
-echo "    bash $REMOTE_PATH/sync.py import"
+echo "    python3 $REMOTE_PATH/sync.py import"
 echo ""
 
 echo "══════════════════════════════════════════════"

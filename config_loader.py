@@ -33,6 +33,7 @@ _DEFAULTS = {
     "idle_threshold_seconds": 300,
     "sync_enabled":           False,
     "sync_path":              "",
+    "auto_categorize":        True,
 }
 
 
@@ -62,7 +63,7 @@ def db_path() -> Path:
     return Path(load()["data_dir"]) / "activity.db"
 
 
-def sync_dir() -> Path | None:
+def sync_dir():
     cfg = load()
     if cfg.get("sync_enabled") and cfg.get("sync_path"):
         p = Path(cfg["sync_path"]) / "productivity-monitor"

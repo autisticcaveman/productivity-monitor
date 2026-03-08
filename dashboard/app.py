@@ -14,15 +14,16 @@ import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 BASE_DIR  = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 import config_loader
 
-_cfg      = config_loader.load()
-DB_PATH   = Path(_cfg["data_dir"]) / "activity.db"
-CATS_PATH = BASE_DIR / "categories.json"
+_cfg        = config_loader.load()
+DB_PATH     = Path(_cfg["data_dir"]) / "activity.db"
+CATS_PATH   = BASE_DIR / "categories.json"
+CONFIG_PATH = BASE_DIR / "config.json"
 
 app = Flask(__name__)
 
@@ -303,6 +304,59 @@ def api_weekly_scores():
         })
     conn.close()
     return jsonify(scores)
+
+
+# ── Settings / categories API ─────────────────────────────────────────────────
+
+@app.route("/api/categories")
+def api_get_categories():
+    return jsonify(load_categories())
+
+
+@app.route("/api/categories", methods=["POST"])
+def api_save_categories():
+    data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "invalid payload"}), 400
+    with open(CATS_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/config")
+def api_get_config():
+    cfg = config_loader.load()
+    return jsonify({
+        "auto_categorize":        cfg.get("auto_categorize", True),
+        "poll_interval_seconds":  cfg["poll_interval_seconds"],
+        "idle_threshold_seconds": cfg["idle_threshold_seconds"],
+    })
+
+
+@app.route("/api/config", methods=["POST"])
+def api_save_config():
+    data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "invalid payload"}), 400
+
+    # Read current config file (preserve all keys we don't touch)
+    current = {}
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH) as f:
+                current = json.load(f)
+        except Exception:
+            pass
+
+    # Only allow safe dashboard-editable keys
+    safe_keys = {"auto_categorize", "poll_interval_seconds", "idle_threshold_seconds"}
+    for k, v in data.items():
+        if k in safe_keys:
+            current[k] = v
+
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(current, f, indent=2)
+    return jsonify({"ok": True})
 
 
 # ── Background analysis thread ────────────────────────────────────────────────

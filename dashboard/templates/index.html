@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Productivity Dashboard</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
+  /* ── Theme variables ── */
   :root {
     --bg:          #0d0d1a;
     --card-bg:     #13132a;
@@ -17,6 +19,23 @@
     --green:       #3ddc84;
     --yellow:      #ffc107;
     --red:         #ff4d6a;
+    --input-bg:    #1a1a35;
+    --chart-grid:  #1e1e40;
+    --chart-tick:  #7a7ea0;
+  }
+  .light-theme {
+    --bg:          #f4f6fb;
+    --card-bg:     #ffffff;
+    --card-border: #dde3f0;
+    --text:        #1e2035;
+    --muted:       #6b7194;
+    --accent:      #5b54e8;
+    --green:       #27a85f;
+    --yellow:      #c48b00;
+    --red:         #e03050;
+    --input-bg:    #eef0f8;
+    --chart-grid:  #e8ecf8;
+    --chart-tick:  #8890b0;
   }
 
   * { box-sizing: border-box; }
@@ -27,6 +46,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
     font-size: 14px;
     min-height: 100vh;
+    transition: background .25s, color .25s;
   }
 
   /* ── Cards ── */
@@ -34,6 +54,7 @@
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 14px;
+    transition: background .25s, border-color .25s;
   }
   .card-label {
     font-size: 10px;
@@ -79,6 +100,7 @@
     transition: opacity .2s;
     min-width: 20px;
   }
+  .light-theme .tl-bar { color: rgba(0,0,0,.8); }
   .tl-bar:hover { opacity: .8; }
 
   /* ── Window list ── */
@@ -101,6 +123,7 @@
     margin-bottom: 9px;
     position: relative;
   }
+  .light-theme .rec-card { background: rgba(0,0,0,.035); }
   .rec-high   { border-color: var(--red);    }
   .rec-medium { border-color: var(--yellow); }
   .rec-low    { border-color: var(--green);  }
@@ -138,6 +161,16 @@
   .pulse-dot.offline { background: var(--red); animation: none; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
+  /* ── Settings button ── */
+  .btn-settings {
+    background: none; border: 1px solid var(--card-border);
+    color: var(--muted); border-radius: 8px;
+    padding: 5px 10px; cursor: pointer; font-size: 15px;
+    transition: color .2s, border-color .2s;
+    line-height: 1;
+  }
+  .btn-settings:hover { color: var(--text); border-color: var(--muted); }
+
   /* ── Scroll ── */
   .scroll-box { overflow-y: auto; }
   .scroll-box::-webkit-scrollbar { width: 3px; }
@@ -153,6 +186,147 @@
   @media (max-width: 576px) {
     .score-number { font-size: 3rem; }
   }
+
+  /* ════════════════════════════════════════════════════
+     SETTINGS PANEL
+     ════════════════════════════════════════════════════ */
+  .offcanvas {
+    background: var(--card-bg) !important;
+    border-left: 1px solid var(--card-border) !important;
+    color: var(--text) !important;
+    width: 400px !important;
+  }
+  .offcanvas-header {
+    border-bottom: 1px solid var(--card-border);
+    padding: 16px 20px;
+  }
+  .offcanvas-title { font-size: .95rem; font-weight: 700; color: var(--text); }
+  .offcanvas-body  { padding: 16px 20px; }
+  .btn-close       { filter: invert(1) brightness(.6); }
+  .light-theme .btn-close { filter: none; }
+
+  /* Settings tabs */
+  .settings-nav { gap: 4px; margin-bottom: 18px; flex-wrap: wrap; }
+  .settings-nav .nav-link {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; padding: 5px 10px; border-radius: 6px;
+    color: var(--muted); background: none; border: none;
+    transition: color .15s, background .15s;
+  }
+  .settings-nav .nav-link:hover  { color: var(--text); }
+  .settings-nav .nav-link.active { background: var(--accent); color: #fff; }
+
+  /* Section titles */
+  .stg-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); font-weight: 700; margin-bottom: 10px;
+  }
+  .stg-desc {
+    font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 3px;
+  }
+
+  /* Theme picker */
+  .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .theme-opt input { display: none; }
+  .theme-opt-box {
+    text-align: center; padding: 12px 4px; border-radius: 10px;
+    border: 2px solid var(--card-border); cursor: pointer;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    transition: border-color .15s, color .15s;
+  }
+  .theme-opt-icon { font-size: 20px; display: block; margin-bottom: 5px; }
+  .theme-opt input:checked + .theme-opt-box {
+    border-color: var(--accent); color: var(--text);
+  }
+
+  /* General toggle */
+  .stg-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 12px 0; border-bottom: 1px solid var(--card-border);
+  }
+  .stg-row:last-child { border-bottom: none; }
+  .form-check-input:checked { background-color: var(--accent); border-color: var(--accent); }
+
+  /* Category list */
+  .cat-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .cat-sel-btn {
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 6px; border: 2px solid transparent;
+    cursor: pointer; background: var(--input-bg); color: var(--muted);
+    transition: all .15s;
+  }
+  .cat-sel-btn:hover  { color: var(--text); }
+  .cat-sel-btn.active { color: #fff; border-color: transparent !important; }
+
+  /* App tags */
+  .apps-wrap { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; margin-bottom: 12px; }
+  .app-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: 6px; padding: 3px 8px;
+    font-size: 11px; color: var(--text);
+  }
+  .app-tag-rm {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; padding: 0; line-height: 1;
+    transition: color .15s;
+  }
+  .app-tag-rm:hover { color: var(--red); }
+
+  /* Settings inputs */
+  .stg-input {
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    color: var(--text); border-radius: 7px; padding: 6px 10px;
+    font-size: 12px; width: 100%; outline: none;
+    transition: border-color .15s;
+  }
+  .stg-input:focus { border-color: var(--accent); }
+  .stg-select {
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    color: var(--text); border-radius: 7px; padding: 6px 10px;
+    font-size: 12px; outline: none; cursor: pointer;
+    transition: border-color .15s;
+  }
+  .stg-select:focus { border-color: var(--accent); }
+
+  /* Save button */
+  .btn-save {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 8px; padding: 7px 18px; font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: opacity .15s;
+  }
+  .btn-save:hover { opacity: .85; }
+
+  /* Small secondary button */
+  .btn-sm-danger {
+    background: none; border: 1px solid var(--card-border);
+    color: var(--muted); border-radius: 6px; padding: 3px 8px;
+    font-size: 11px; cursor: pointer; transition: all .15s;
+  }
+  .btn-sm-danger:hover { border-color: var(--red); color: var(--red); }
+
+  /* Browser rule cards */
+  .rule-card {
+    background: var(--input-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .rule-keywords { font-size: 11px; color: var(--muted); margin-bottom: 6px; line-height: 1.6; }
+  .rule-kw-tag {
+    display: inline-block; background: var(--card-border);
+    border-radius: 4px; padding: 1px 6px; margin: 1px 2px;
+    font-size: 10px; color: var(--text);
+  }
+
+  /* Toast */
+  .toast-msg {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--accent); color: #fff;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 9999;
+  }
+  .toast-msg.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -164,9 +338,14 @@
       <span class="pulse-dot" id="statusDot"></span>
       Productivity Dashboard
     </h1>
-    <div class="text-end">
-      <div style="font-size:11px;color:var(--muted)" id="headerDate">—</div>
-      <div style="font-size:11px;color:var(--muted)" id="headerStatus">Connecting…</div>
+    <div class="d-flex align-items-center gap-3">
+      <div class="text-end">
+        <div style="font-size:11px;color:var(--muted)" id="headerDate">—</div>
+        <div style="font-size:11px;color:var(--muted)" id="headerStatus">Connecting…</div>
+      </div>
+      <button class="btn-settings" data-bs-toggle="offcanvas" data-bs-target="#settingsPanel" title="Settings">
+        ⚙
+      </button>
     </div>
   </div>
 
@@ -260,11 +439,135 @@
 
 </div><!-- /container -->
 
+<!-- ════════════════════════════════════════════════════
+     SETTINGS PANEL (offcanvas)
+     ════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPanel">
+  <div class="offcanvas-header">
+    <span class="offcanvas-title">⚙ Settings</span>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+
+    <!-- Tab nav -->
+    <ul class="nav settings-nav" id="settingsTabs" role="tablist">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="pill" href="#stg-appearance">Appearance</a></li>
+      <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-general">General</a></li>
+      <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-categories">App Categories</a></li>
+      <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-browser">Browser Rules</a></li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- ── Appearance ─────────────────────────────── -->
+      <div class="tab-pane fade show active" id="stg-appearance">
+        <div class="stg-label">Theme</div>
+        <div class="theme-grid mb-4">
+          <label class="theme-opt">
+            <input type="radio" name="theme" value="dark">
+            <div class="theme-opt-box"><span class="theme-opt-icon">🌙</span>Dark</div>
+          </label>
+          <label class="theme-opt">
+            <input type="radio" name="theme" value="light">
+            <div class="theme-opt-box"><span class="theme-opt-icon">☀️</span>Light</div>
+          </label>
+          <label class="theme-opt">
+            <input type="radio" name="theme" value="system">
+            <div class="theme-opt-box"><span class="theme-opt-icon">💻</span>System</div>
+          </label>
+        </div>
+        <p class="stg-desc">Theme is saved in your browser and applied immediately.</p>
+      </div>
+
+      <!-- ── General ────────────────────────────────── -->
+      <div class="tab-pane fade" id="stg-general">
+        <div class="stg-row">
+          <div style="flex:1;padding-right:12px">
+            <div style="font-size:13px;font-weight:600">Auto-categorize apps</div>
+            <div class="stg-desc">
+              Automatically assign apps to categories using name matching and browser window rules.
+              Turn off to log everything as "Uncategorized" — useful if you want a clean slate
+              while setting up your own rules.
+            </div>
+          </div>
+          <div class="form-check form-switch" style="margin-top:3px;flex-shrink:0">
+            <input class="form-check-input" type="checkbox" id="autoCatToggle" role="switch">
+          </div>
+        </div>
+        <div style="margin-top:18px">
+          <button class="btn-save" onclick="saveGeneralSettings()">Save General Settings</button>
+        </div>
+      </div>
+
+      <!-- ── App Categories ─────────────────────────── -->
+      <div class="tab-pane fade" id="stg-categories">
+        <div class="stg-label">Category</div>
+        <div class="cat-list" id="catList">
+          <span style="font-size:11px;color:var(--muted)">Loading…</span>
+        </div>
+        <div id="catEditor">
+          <div class="stg-label" id="catEditorTitle">—</div>
+          <div class="apps-wrap" id="catAppsList"></div>
+          <div class="d-flex gap-2">
+            <input class="stg-input" id="newAppInput" placeholder="app process name (e.g. cursor)"
+              onkeydown="if(event.key==='Enter') addApp()">
+            <button class="btn-save" onclick="addApp()" style="white-space:nowrap">+ Add</button>
+          </div>
+          <p class="stg-desc mt-2">
+            Partial matches — e.g. "code" matches "vscode", "code helper", etc. Case-insensitive.
+          </p>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn-save" onclick="saveCategories()">Save Categories</button>
+        </div>
+      </div>
+
+      <!-- ── Browser Rules ──────────────────────────── -->
+      <div class="tab-pane fade" id="stg-browser">
+        <p class="stg-desc mb-3">
+          Rules classify browser tabs by matching keywords against the window title (page title / URL).
+          Checked in order — first match wins.
+        </p>
+        <div id="browserRulesList">
+          <span style="font-size:11px;color:var(--muted)">Loading…</span>
+        </div>
+
+        <!-- Add rule form -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--card-border)">
+          <div class="stg-label">Add New Rule</div>
+          <div class="mb-2">
+            <label class="stg-desc mb-1">Keywords (comma-separated)</label>
+            <input class="stg-input" id="newRuleKeywords" placeholder="youtube, twitch, netflix">
+          </div>
+          <div class="mb-3">
+            <label class="stg-desc mb-1">Classify as</label>
+            <select class="stg-select w-100" id="newRuleCategory">
+              <!-- populated by JS -->
+            </select>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn-save" onclick="addRule()">Add Rule</button>
+            <button class="btn-save" onclick="saveCategories()" style="background:var(--green)">Save All Rules</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-content -->
+  </div><!-- /offcanvas-body -->
+</div><!-- /offcanvas -->
+
+<!-- Toast -->
+<div class="toast-msg" id="toastMsg"></div>
+
 <script>
 // ── Config & state ────────────────────────────────────────────────────────────
 const CATS = {{ categories | tojson }};
-let donutChart = null;
+let donutChart  = null;
 let weeklyChart = null;
+
+// Live-editable copy of categories (loaded when settings panel opens)
+let settingsCats = null;
+let selectedCat  = null;
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function fmtMins(m) {
@@ -273,16 +576,9 @@ function fmtMins(m) {
   const h = Math.floor(m / 60), r = Math.round(m % 60);
   return r ? `${h}h ${r}m` : `${h}h`;
 }
-
-function catColor(key) {
-  return (CATS[key] || {}).color || '#607D8B';
-}
-function catLabel(key) {
-  return (CATS[key] || {}).label || key.replace(/_/g,' ');
-}
-function scoreClass(s) {
-  return s >= 65 ? 'score-high' : s >= 35 ? 'score-mid' : 'score-low';
-}
+function catColor(key) { return (CATS[key] || {}).color || '#607D8B'; }
+function catLabel(key) { return (CATS[key] || {}).label || key.replace(/_/g,' '); }
+function scoreClass(s) { return s >= 65 ? 'score-high' : s >= 35 ? 'score-mid' : 'score-low'; }
 function scoreText(s) {
   if (s >= 85) return 'Absolutely crushing it 🔥';
   if (s >= 70) return 'In the zone 🎯';
@@ -292,6 +588,52 @@ function scoreText(s) {
   if (s >= 10) return 'Off track';
   return 'Not much tracked yet';
 }
+
+function showToast(msg) {
+  const t = document.getElementById('toastMsg');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  const root = document.documentElement;
+  let isDark;
+  if (theme === 'system') {
+    isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } else {
+    isDark = theme === 'dark';
+  }
+  root.classList.toggle('light-theme', !isDark);
+  root.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+  localStorage.setItem('theme', theme);
+  document.querySelectorAll('input[name="theme"]').forEach(r => { r.checked = r.value === theme; });
+  // Redraw charts with updated colors
+  if (donutChart)  { donutChart.destroy();  donutChart  = null; loadToday();  }
+  if (weeklyChart) { weeklyChart.destroy(); weeklyChart = null; loadWeekly(); }
+}
+
+function getChartColors() {
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    grid: styles.getPropertyValue('--chart-grid').trim(),
+    tick: styles.getPropertyValue('--chart-tick').trim(),
+    card: styles.getPropertyValue('--card-bg').trim(),
+  };
+}
+
+// Listen for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (localStorage.getItem('theme') === 'system') applyTheme('system');
+});
+
+document.querySelectorAll('input[name="theme"]').forEach(r => {
+  r.addEventListener('change', () => applyTheme(r.value));
+});
+
+// Apply saved theme on load
+applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ── Status ────────────────────────────────────────────────────────────────────
 async function loadStatus() {
@@ -310,7 +652,7 @@ async function loadStatus() {
         </div>`;
     } else {
       dot.className = 'pulse-dot offline';
-      sts.textContent = 'Monitor not running — run install.sh';
+      sts.textContent = 'Monitor not running — run install.py';
     }
   } catch {
     document.getElementById('statusDot').className = 'pulse-dot offline';
@@ -321,37 +663,32 @@ async function loadStatus() {
 // ── Today ─────────────────────────────────────────────────────────────────────
 async function loadToday() {
   const d = await fetch('/api/today').then(r => r.json());
-
-  // Score
   const el = document.getElementById('scoreNum');
   el.textContent = d.score;
   el.className = `score-number ${scoreClass(d.score)}`;
   document.getElementById('scoreLabel').textContent = scoreText(d.score);
-
-  // Stats
   document.getElementById('activeHrs').textContent = fmtMins(d.total_active_minutes);
   document.getElementById('idleHrs').textContent   = fmtMins(d.idle_minutes);
 
-  // Donut
   if (d.chart.labels.length) {
+    const { card } = getChartColors();
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(document.getElementById('donutChart'), {
       type: 'doughnut',
       data: {
         labels:   d.chart.labels,
-        datasets: [{ data: d.chart.values, backgroundColor: d.chart.colors, borderColor: '#13132a', borderWidth: 2 }],
+        datasets: [{ data: d.chart.values, backgroundColor: d.chart.colors, borderColor: card, borderWidth: 2 }],
       },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '68%',
         plugins: {
-          legend: { position: 'right', labels: { color: '#dde1f0', font:{size:10}, padding:8, boxWidth:9 } },
+          legend: { position: 'right', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim(), font:{size:10}, padding:8, boxWidth:9 } },
           tooltip: { callbacks: { label: c => ` ${fmtMins(c.raw)}` } },
         },
       },
     });
   }
 
-  // Top cats
   const sorted = Object.entries(d.categories).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const maxM   = sorted[0]?.[1] || 1;
   document.getElementById('topCats').innerHTML = sorted.map(([cat, mins]) => `
@@ -370,26 +707,27 @@ async function loadToday() {
 // ── Weekly ────────────────────────────────────────────────────────────────────
 async function loadWeekly() {
   const days = await fetch('/api/weekly').then(r => r.json());
+  const { grid, tick } = getChartColors();
   if (weeklyChart) weeklyChart.destroy();
   weeklyChart = new Chart(document.getElementById('weeklyBar'), {
     type: 'bar',
     data: {
       labels: days.map(d => d.label),
       datasets: [
-        { label:'Deep Work',    data: days.map(d=>d.productive_minutes),    backgroundColor:'#3ddc8455', borderColor:'#3ddc84', borderWidth:1 },
-        { label:'Comms',        data: days.map(d=>d.communication_minutes), backgroundColor:'#ffc10755', borderColor:'#ffc107', borderWidth:1 },
-        { label:'Distraction',  data: days.map(d=>d.distraction_minutes),   backgroundColor:'#ff4d6a55', borderColor:'#ff4d6a', borderWidth:1 },
-        { label:'Other',        data: days.map(d=>d.other_minutes),         backgroundColor:'#607D8B55', borderColor:'#607D8B', borderWidth:1 },
+        { label:'Deep Work',   data: days.map(d=>d.productive_minutes),    backgroundColor:'#3ddc8455', borderColor:'#3ddc84', borderWidth:1 },
+        { label:'Comms',       data: days.map(d=>d.communication_minutes), backgroundColor:'#ffc10755', borderColor:'#ffc107', borderWidth:1 },
+        { label:'Distraction', data: days.map(d=>d.distraction_minutes),   backgroundColor:'#ff4d6a55', borderColor:'#ff4d6a', borderWidth:1 },
+        { label:'Other',       data: days.map(d=>d.other_minutes),         backgroundColor:'#607D8B55', borderColor:'#607D8B', borderWidth:1 },
       ],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { stacked:true, ticks:{color:'#7a7ea0'}, grid:{color:'#1e1e40'} },
-        y: { stacked:true, ticks:{color:'#7a7ea0', callback:v=>fmtMins(v)}, grid:{color:'#1e1e40'} },
+        x: { stacked:true, ticks:{color:tick}, grid:{color:grid} },
+        y: { stacked:true, ticks:{color:tick, callback:v=>fmtMins(v)}, grid:{color:grid} },
       },
       plugins: {
-        legend: { labels:{color:'#dde1f0', font:{size:10}, padding:8, boxWidth:9} },
+        legend: { labels:{color:getComputedStyle(document.documentElement).getPropertyValue('--text').trim(), font:{size:10}, padding:8, boxWidth:9} },
         tooltip: { callbacks:{ label: c => ` ${c.dataset.label}: ${fmtMins(c.raw)}` } },
       },
     },
@@ -467,19 +805,183 @@ function updateDate() {
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 }
-
 async function fastRefresh() {
   await Promise.all([loadStatus(), loadToday(), loadTimeline(), loadWindows()]);
 }
 async function slowRefresh() {
   await Promise.all([loadWeekly(), loadRecs()]);
 }
-
 updateDate();
 fastRefresh();
 slowRefresh();
-setInterval(fastRefresh, 60_000);    // every 1 min
-setInterval(slowRefresh, 300_000);   // every 5 min
+setInterval(fastRefresh, 60_000);
+setInterval(slowRefresh, 300_000);
+
+// ════════════════════════════════════════════════════
+// SETTINGS PANEL JS
+// ════════════════════════════════════════════════════
+
+// ── General settings ──────────────────────────────────────────────────────────
+async function loadGeneralSettings() {
+  const cfg = await fetch('/api/config').then(r => r.json());
+  document.getElementById('autoCatToggle').checked = cfg.auto_categorize !== false;
+}
+
+async function saveGeneralSettings() {
+  const auto = document.getElementById('autoCatToggle').checked;
+  const res = await fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ auto_categorize: auto }),
+  });
+  if (res.ok) showToast('Settings saved — takes effect on next monitor poll');
+}
+
+// ── Categories editor ─────────────────────────────────────────────────────────
+async function loadSettingsCategories() {
+  settingsCats = await fetch('/api/categories').then(r => r.json());
+  // Pick first non-meta category as default
+  if (!selectedCat) {
+    selectedCat = Object.keys(settingsCats).find(k => !['idle','uncategorized'].includes(k)) || null;
+  }
+  renderCatList();
+  renderCatEditor();
+  populateBrowserRules();
+}
+
+function renderCatList() {
+  if (!settingsCats) return;
+  document.getElementById('catList').innerHTML = Object.entries(settingsCats)
+    .filter(([k]) => !['idle','uncategorized'].includes(k))
+    .map(([k, v]) => `
+      <button class="cat-sel-btn ${k === selectedCat ? 'active' : ''}"
+              style="${k === selectedCat ? `background:${v.color}` : `border-color:${v.color}`}"
+              onclick="selectCat('${k}')">${v.label}</button>
+    `).join('');
+}
+
+function selectCat(key) {
+  selectedCat = key;
+  renderCatList();
+  renderCatEditor();
+}
+
+function renderCatEditor() {
+  if (!settingsCats || !selectedCat || !settingsCats[selectedCat]) return;
+  const cat  = settingsCats[selectedCat];
+  const apps = cat.apps || [];
+  document.getElementById('catEditorTitle').textContent = `Apps in: ${cat.label}`;
+  document.getElementById('catAppsList').innerHTML = apps.length
+    ? apps.map((app, i) => `
+        <div class="app-tag">
+          ${app}
+          <button class="app-tag-rm" onclick="removeApp(${i})" title="Remove">×</button>
+        </div>`).join('')
+    : `<span style="font-size:11px;color:var(--muted)">No apps listed yet.</span>`;
+}
+
+function removeApp(idx) {
+  if (!settingsCats[selectedCat].apps) return;
+  settingsCats[selectedCat].apps.splice(idx, 1);
+  renderCatEditor();
+}
+
+function addApp() {
+  const input = document.getElementById('newAppInput');
+  const val   = input.value.trim().toLowerCase();
+  if (!val) return;
+  if (!settingsCats[selectedCat].apps) settingsCats[selectedCat].apps = [];
+  if (!settingsCats[selectedCat].apps.includes(val)) {
+    settingsCats[selectedCat].apps.push(val);
+    renderCatEditor();
+  }
+  input.value = '';
+  input.focus();
+}
+
+async function saveCategories() {
+  const res = await fetch('/api/categories', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(settingsCats),
+  });
+  if (res.ok) showToast('Categories saved — active on next monitor poll');
+}
+
+// ── Browser rules editor ──────────────────────────────────────────────────────
+function populateBrowserRules() {
+  if (!settingsCats) return;
+
+  // Populate the category dropdown
+  const sel = document.getElementById('newRuleCategory');
+  sel.innerHTML = Object.entries(settingsCats)
+    .filter(([k]) => !['idle','uncategorized','browsing'].includes(k))
+    .map(([k, v]) => `<option value="${k}">${v.label}</option>`)
+    .join('');
+
+  renderBrowserRules();
+}
+
+function renderBrowserRules() {
+  if (!settingsCats?.browsing) return;
+  const overrides = settingsCats.browsing.window_overrides || [];
+  const el = document.getElementById('browserRulesList');
+
+  if (!overrides.length) {
+    el.innerHTML = '<p style="font-size:11px;color:var(--muted)">No rules yet. Add one below.</p>';
+    return;
+  }
+
+  el.innerHTML = overrides.map((rule, i) => {
+    const cat   = settingsCats[rule.category] || {};
+    const color = cat.color || '#607D8B';
+    const label = cat.label || rule.category;
+    return `
+      <div class="rule-card">
+        <div class="rule-keywords">
+          ${rule.keywords.map(k => `<span class="rule-kw-tag">${k}</span>`).join(' ')}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size:10px;color:var(--muted)">→</span>
+          <span class="pill" style="background:${color}">${label}</span>
+          <button class="btn-sm-danger ms-auto" onclick="deleteRule(${i})">Delete</button>
+          <button class="btn-sm-danger" onclick="moveRule(${i}, -1)" title="Move up">↑</button>
+          <button class="btn-sm-danger" onclick="moveRule(${i},  1)" title="Move down">↓</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function deleteRule(idx) {
+  settingsCats.browsing.window_overrides.splice(idx, 1);
+  renderBrowserRules();
+}
+
+function moveRule(idx, dir) {
+  const arr = settingsCats.browsing.window_overrides;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= arr.length) return;
+  [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+  renderBrowserRules();
+}
+
+function addRule() {
+  const rawKw  = document.getElementById('newRuleKeywords').value;
+  const cat    = document.getElementById('newRuleCategory').value;
+  const kws    = rawKw.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+  if (!kws.length) { showToast('Enter at least one keyword'); return; }
+  if (!settingsCats.browsing.window_overrides) settingsCats.browsing.window_overrides = [];
+  settingsCats.browsing.window_overrides.push({ keywords: kws, category: cat });
+  document.getElementById('newRuleKeywords').value = '';
+  renderBrowserRules();
+  showToast('Rule added — click "Save All Rules" to persist');
+}
+
+// ── Open settings panel → load everything ─────────────────────────────────────
+document.getElementById('settingsPanel').addEventListener('show.bs.offcanvas', () => {
+  loadSettingsCategories();
+  loadGeneralSettings();
+});
 </script>
 </body>
 </html>
