@@ -1,0 +1,91 @@
+{
+  "deep_work": {
+    "label": "Deep Work",
+    "color": "#4CAF50",
+    "apps": ["code", "cursor", "vim", "neovim", "xcode", "pycharm", "intellij", "sublime text", "atom", "emacs", "zed", "nova", "bbedit"],
+    "window_overrides": []
+  },
+  "terminal": {
+    "label": "Terminal / Dev",
+    "color": "#2196F3",
+    "apps": ["terminal", "iterm", "iterm2", "alacritty", "warp", "hyper", "kitty", "ghostty"]
+  },
+  "communication": {
+    "label": "Communication",
+    "color": "#FF9800",
+    "apps": ["slack", "microsoft teams", "zoom", "discord", "messages", "mail", "outlook", "signal", "telegram", "facetime", "skype", "mattermost"]
+  },
+  "documentation": {
+    "label": "Docs / Writing",
+    "color": "#9C27B0",
+    "apps": ["obsidian", "notion", "word", "microsoft word", "pages", "bear", "typora", "writeroom", "ulysses", "drafts", "logseq", "craft"]
+  },
+  "ai_tools": {
+    "label": "AI Tools",
+    "color": "#3F51B5",
+    "apps": ["claude", "chatgpt"],
+    "window_overrides": []
+  },
+  "browsing": {
+    "label": "Browsing",
+    "color": "#607D8B",
+    "apps": ["google chrome", "firefox", "safari", "arc", "brave browser", "microsoft edge", "opera", "vivaldi"],
+    "window_overrides": [
+      {
+        "keywords": ["youtube", "reddit", "twitter", "x.com", "instagram", "facebook", "tiktok", "netflix", "hulu", "twitch", "discord.com", "espn"],
+        "category": "distraction"
+      },
+      {
+        "keywords": ["github", "gitlab", "stackoverflow", "docs.", "documentation", "api reference", "mdn", "devdocs", "man page", "readthedocs", "python.org", "rust-lang"],
+        "category": "deep_work"
+      },
+      {
+        "keywords": ["servicenow", "jira", "confluence", "linear.app", "asana", "trello", "monday.com", "basecamp", "shortcut.com"],
+        "category": "planning"
+      },
+      {
+        "keywords": ["gmail", "mail.", "outlook.live", "protonmail", "fastmail"],
+        "category": "communication"
+      },
+      {
+        "keywords": ["claude.ai", "chat.openai", "bard.google", "perplexity"],
+        "category": "ai_tools"
+      }
+    ]
+  },
+  "planning": {
+    "label": "Planning / PM",
+    "color": "#00BCD4",
+    "apps": ["omnifocus", "things", "things 3", "todoist", "linear", "reminders"]
+  },
+  "meetings": {
+    "label": "Meetings / Calls",
+    "color": "#F44336",
+    "apps": ["zoom", "webex", "goto meeting", "whereby", "around", "tuple"]
+  },
+  "distraction": {
+    "label": "Distraction",
+    "color": "#E91E63",
+    "apps": ["youtube music", "spotify"]
+  },
+  "creative": {
+    "label": "Creative",
+    "color": "#FF5722",
+    "apps": ["figma", "sketch", "adobe photoshop", "adobe illustrator", "affinity designer", "affinity photo", "canva", "pixelmator", "screenflow", "davinci resolve"]
+  },
+  "system": {
+    "label": "System / Util",
+    "color": "#78909C",
+    "apps": ["finder", "system preferences", "system settings", "activity monitor", "disk utility", "preview", "console", "keychain access", "automator", "script editor"]
+  },
+  "idle": {
+    "label": "Idle",
+    "color": "#37474F",
+    "apps": []
+  },
+  "uncategorized": {
+    "label": "Other",
+    "color": "#546E7A",
+    "apps": []
+  }
+}

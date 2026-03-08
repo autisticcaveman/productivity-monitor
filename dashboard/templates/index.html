@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productivity Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:          #0d0d1a;
+    --card-bg:     #13132a;
+    --card-border: #1e1e40;
+    --text:        #dde1f0;
+    --muted:       #7a7ea0;
+    --accent:      #6c63ff;
+    --green:       #3ddc84;
+    --yellow:      #ffc107;
+    --red:         #ff4d6a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+  }
+  .card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  /* ── Score ── */
+  .score-number {
+    font-size: 4.5rem;
+    font-weight: 800;
+    line-height: 1;
+    transition: color .4s;
+  }
+  .score-high   { color: var(--green);  }
+  .score-mid    { color: var(--yellow); }
+  .score-low    { color: var(--red);    }
+  .score-sublabel { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Stat chips ── */
+  .stat-chip { text-align: center; }
+  .stat-val  { font-size: 1.4rem; font-weight: 700; }
+  .stat-lbl  { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* ── Category bars ── */
+  .cat-row { margin-bottom: 6px; }
+  .cat-row-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+  .bar-track { height: 5px; background: var(--card-border); border-radius: 3px; }
+  .bar-fill  { height: 5px; border-radius: 3px; transition: width .5s ease; }
+
+  /* ── Timeline ── */
+  .tl-row { display: flex; align-items: center; margin-bottom: 4px; }
+  .tl-hour { width: 42px; font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .tl-bar  {
+    height: 24px; border-radius: 4px; padding: 0 8px;
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,.9);
+    display: flex; align-items: center;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity .2s;
+    min-width: 20px;
+  }
+  .tl-bar:hover { opacity: .8; }
+
+  /* ── Window list ── */
+  .win-item {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px solid var(--card-border);
+    gap: 8px;
+  }
+  .win-item:last-child { border-bottom: none; }
+  .win-title  { font-size: 12px; line-height: 1.3; }
+  .win-app    { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .win-mins   { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+
+  /* ── Recommendations ── */
+  .rec-card {
+    border-left: 3px solid;
+    padding: 11px 14px;
+    background: rgba(255,255,255,.025);
+    border-radius: 0 10px 10px 0;
+    margin-bottom: 9px;
+    position: relative;
+  }
+  .rec-high   { border-color: var(--red);    }
+  .rec-medium { border-color: var(--yellow); }
+  .rec-low    { border-color: var(--green);  }
+  .rec-title  { font-size: 13px; font-weight: 700; margin-bottom: 5px; padding-right: 22px; }
+  .rec-body   { font-size: 12px; color: var(--muted); line-height: 1.55; }
+  .rec-meta   { font-size: 10px; color: var(--muted); margin-top: 7px; }
+  .dismiss-btn {
+    position: absolute; top: 9px; right: 10px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer; font-size: 12px; padding: 0;
+  }
+  .dismiss-btn:hover { color: var(--text); }
+
+  /* ── Pill ── */
+  .pill {
+    display: inline-block;
+    padding: 1px 7px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; color: #fff;
+    vertical-align: middle;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 14px 0 10px;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 18px;
+  }
+  .header-title { font-size: 1rem; font-weight: 700; margin: 0; }
+  .pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); display: inline-block;
+    margin-right: 7px; flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  .pulse-dot.offline { background: var(--red); animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  /* ── Scroll ── */
+  .scroll-box { overflow-y: auto; }
+  .scroll-box::-webkit-scrollbar { width: 3px; }
+  .scroll-box::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+
+  /* ── Current app badge ── */
+  .current-app-name { font-size: 1rem; font-weight: 700; }
+
+  /* ── Divider ── */
+  hr.dim { border-color: var(--card-border); margin: 12px 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 576px) {
+    .score-number { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container-fluid px-3 px-md-4">
+
+  <!-- Header -->
+  <div class="header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1 class="header-title d-flex align-items-center">
+      <span class="pulse-dot" id="statusDot"></span>
+      Productivity Dashboard
+    </h1>
+    <div class="text-end">
+      <div style="font-size:11px;color:var(--muted)" id="headerDate">—</div>
+      <div style="font-size:11px;color:var(--muted)" id="headerStatus">Connecting…</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Score | Donut | Live + Top Cats -->
+  <div class="row g-3 mb-3">
+
+    <!-- Score card -->
+    <div class="col-6 col-md-2">
+      <div class="card h-100 p-3 text-center d-flex flex-column justify-content-center">
+        <div class="card-label">Score</div>
+        <div class="score-number score-mid" id="scoreNum">—</div>
+        <div class="score-sublabel" id="scoreLabel">…</div>
+        <hr class="dim">
+        <div class="d-flex justify-content-around">
+          <div class="stat-chip">
+            <div class="stat-val" id="activeHrs">—</div>
+            <div class="stat-lbl">Active</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-val" id="idleHrs">—</div>
+            <div class="stat-lbl">Idle</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today donut -->
+    <div class="col-6 col-md-3">
+      <div class="card h-100 p-3">
+        <div class="card-label">Today's Breakdown</div>
+        <div style="position:relative;height:170px">
+          <canvas id="donutChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live activity + top cats -->
+    <div class="col-12 col-md-7">
+      <div class="card h-100 p-3">
+        <div class="card-label">Active Right Now</div>
+        <div id="liveApp" style="margin-bottom:10px">
+          <span style="color:var(--muted);font-size:12px">Loading…</span>
+        </div>
+        <hr class="dim">
+        <div class="card-label">Top Categories Today</div>
+        <div id="topCats"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Weekly bar | Timeline -->
+  <div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-6">
+      <div class="card p-3">
+        <div class="card-label">7-Day Trend</div>
+        <div style="position:relative;height:200px">
+          <canvas id="weeklyBar"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6">
+      <div class="card p-3">
+        <div class="card-label">Today's Timeline</div>
+        <div id="timeline" class="scroll-box" style="max-height:215px;margin-top:4px"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 3: Recs | Top windows -->
+  <div class="row g-3 mb-5">
+
+    <div class="col-12 col-md-7">
+      <div class="card p-3">
+        <div class="card-label">Recommendations & Insights</div>
+        <div id="recs" class="scroll-box" style="max-height:360px;margin-top:6px"></div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-5">
+      <div class="card p-3">
+        <div class="card-label">Most Active Windows Today</div>
+        <div id="windows" class="scroll-box" style="max-height:360px;margin-top:6px"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Config & state ────────────────────────────────────────────────────────────
+const CATS = {{ categories | tojson }};
+let donutChart = null;
+let weeklyChart = null;
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function fmtMins(m) {
+  if (!m) return '0m';
+  if (m < 60) return Math.round(m) + 'm';
+  const h = Math.floor(m / 60), r = Math.round(m % 60);
+  return r ? `${h}h ${r}m` : `${h}h`;
+}
+
+function catColor(key) {
+  return (CATS[key] || {}).color || '#607D8B';
+}
+function catLabel(key) {
+  return (CATS[key] || {}).label || key.replace(/_/g,' ');
+}
+function scoreClass(s) {
+  return s >= 65 ? 'score-high' : s >= 35 ? 'score-mid' : 'score-low';
+}
+function scoreText(s) {
+  if (s >= 85) return 'Absolutely crushing it 🔥';
+  if (s >= 70) return 'In the zone 🎯';
+  if (s >= 55) return 'Solid session';
+  if (s >= 40) return 'Decent — room to improve';
+  if (s >= 25) return 'Fragmented day';
+  if (s >= 10) return 'Off track';
+  return 'Not much tracked yet';
+}
+
+// ── Status ────────────────────────────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const d = await fetch('/api/status').then(r => r.json());
+    const dot = document.getElementById('statusDot');
+    const sts = document.getElementById('headerStatus');
+    if (d.monitoring) {
+      dot.className = 'pulse-dot';
+      const ts = new Date(d.last_seen);
+      sts.textContent = `${ts.toLocaleTimeString()} · ${d.app}`;
+      document.getElementById('liveApp').innerHTML = `
+        <div class="current-app-name">${d.app}</div>
+        <div style="margin-top:4px">
+          <span class="pill" style="background:${catColor(d.category)}">${catLabel(d.category)}</span>
+        </div>`;
+    } else {
+      dot.className = 'pulse-dot offline';
+      sts.textContent = 'Monitor not running — run install.sh';
+    }
+  } catch {
+    document.getElementById('statusDot').className = 'pulse-dot offline';
+    document.getElementById('headerStatus').textContent = 'Dashboard error';
+  }
+}
+
+// ── Today ─────────────────────────────────────────────────────────────────────
+async function loadToday() {
+  const d = await fetch('/api/today').then(r => r.json());
+
+  // Score
+  const el = document.getElementById('scoreNum');
+  el.textContent = d.score;
+  el.className = `score-number ${scoreClass(d.score)}`;
+  document.getElementById('scoreLabel').textContent = scoreText(d.score);
+
+  // Stats
+  document.getElementById('activeHrs').textContent = fmtMins(d.total_active_minutes);
+  document.getElementById('idleHrs').textContent   = fmtMins(d.idle_minutes);
+
+  // Donut
+  if (d.chart.labels.length) {
+    if (donutChart) donutChart.destroy();
+    donutChart = new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: {
+        labels:   d.chart.labels,
+        datasets: [{ data: d.chart.values, backgroundColor: d.chart.colors, borderColor: '#13132a', borderWidth: 2 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { position: 'right', labels: { color: '#dde1f0', font:{size:10}, padding:8, boxWidth:9 } },
+          tooltip: { callbacks: { label: c => ` ${fmtMins(c.raw)}` } },
+        },
+      },
+    });
+  }
+
+  // Top cats
+  const sorted = Object.entries(d.categories).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxM   = sorted[0]?.[1] || 1;
+  document.getElementById('topCats').innerHTML = sorted.map(([cat, mins]) => `
+    <div class="cat-row">
+      <div class="cat-row-label">
+        <span style="color:${catColor(cat)}">${catLabel(cat)}</span>
+        <span style="color:var(--muted)">${fmtMins(mins)}</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="background:${catColor(cat)};width:${(mins/maxM)*100}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Weekly ────────────────────────────────────────────────────────────────────
+async function loadWeekly() {
+  const days = await fetch('/api/weekly').then(r => r.json());
+  if (weeklyChart) weeklyChart.destroy();
+  weeklyChart = new Chart(document.getElementById('weeklyBar'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => d.label),
+      datasets: [
+        { label:'Deep Work',    data: days.map(d=>d.productive_minutes),    backgroundColor:'#3ddc8455', borderColor:'#3ddc84', borderWidth:1 },
+        { label:'Comms',        data: days.map(d=>d.communication_minutes), backgroundColor:'#ffc10755', borderColor:'#ffc107', borderWidth:1 },
+        { label:'Distraction',  data: days.map(d=>d.distraction_minutes),   backgroundColor:'#ff4d6a55', borderColor:'#ff4d6a', borderWidth:1 },
+        { label:'Other',        data: days.map(d=>d.other_minutes),         backgroundColor:'#607D8B55', borderColor:'#607D8B', borderWidth:1 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked:true, ticks:{color:'#7a7ea0'}, grid:{color:'#1e1e40'} },
+        y: { stacked:true, ticks:{color:'#7a7ea0', callback:v=>fmtMins(v)}, grid:{color:'#1e1e40'} },
+      },
+      plugins: {
+        legend: { labels:{color:'#dde1f0', font:{size:10}, padding:8, boxWidth:9} },
+        tooltip: { callbacks:{ label: c => ` ${c.dataset.label}: ${fmtMins(c.raw)}` } },
+      },
+    },
+  });
+}
+
+// ── Timeline ──────────────────────────────────────────────────────────────────
+async function loadTimeline() {
+  const tl = await fetch('/api/timeline').then(r => r.json());
+  const el = document.getElementById('timeline');
+  if (!tl.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No data yet today.</div>';
+    return;
+  }
+  el.innerHTML = tl.map(t => {
+    const pct = Math.max(8, Math.min(100, (t.total_minutes / 60) * 100));
+    return `<div class="tl-row">
+      <div class="tl-hour">${t.label}</div>
+      <div style="flex:1">
+        <div class="tl-bar" style="background:${t.dominant_color};width:${pct}%">
+          ${t.dominant_label} · ${fmtMins(t.total_minutes)}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Top windows ───────────────────────────────────────────────────────────────
+async function loadWindows() {
+  const wins = await fetch('/api/top-windows').then(r => r.json());
+  const el   = document.getElementById('windows');
+  if (!wins.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No window data yet.</div>';
+    return;
+  }
+  el.innerHTML = wins.map(w => `
+    <div class="win-item">
+      <div>
+        <div class="win-title">${w.window}</div>
+        <div class="win-app">${w.app} &nbsp;·&nbsp; <span class="pill" style="background:${catColor(w.category)}">${catLabel(w.category)}</span></div>
+      </div>
+      <div class="win-mins">${fmtMins(w.minutes)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Recommendations ───────────────────────────────────────────────────────────
+async function loadRecs() {
+  const recs = await fetch('/api/recommendations').then(r => r.json());
+  const el   = document.getElementById('recs');
+  if (!recs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No recommendations yet — keep the monitor running and insights will appear.</div>';
+    return;
+  }
+  el.innerHTML = recs.map(r => `
+    <div class="rec-card rec-${r.priority}" id="rec-${r.id}">
+      <button class="dismiss-btn" onclick="dismissRec(${r.id})" title="Dismiss">✕</button>
+      <div class="rec-title">${r.title}</div>
+      <div class="rec-body">${r.body}</div>
+      <div class="rec-meta">
+        <span class="pill" style="background:${r.priority==='high'?'var(--red)':r.priority==='medium'?'var(--yellow)':'var(--green)'}">${r.priority}</span>
+        &nbsp;${r.category}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function dismissRec(id) {
+  await fetch(`/api/dismiss/${id}`, { method:'POST' });
+  document.getElementById(`rec-${id}`)?.remove();
+}
+
+// ── Refresh loops ─────────────────────────────────────────────────────────────
+function updateDate() {
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+}
+
+async function fastRefresh() {
+  await Promise.all([loadStatus(), loadToday(), loadTimeline(), loadWindows()]);
+}
+async function slowRefresh() {
+  await Promise.all([loadWeekly(), loadRecs()]);
+}
+
+updateDate();
+fastRefresh();
+slowRefresh();
+setInterval(fastRefresh, 60_000);    // every 1 min
+setInterval(slowRefresh, 300_000);   // every 5 min
+</script>
+</body>
+</html>
