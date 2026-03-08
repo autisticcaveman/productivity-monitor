@@ -18,7 +18,7 @@ RC="$SCRIPT_DIR/.deployrc"
 [ -f "$RC" ] && source "$RC"
 
 DB_PATH="$SCRIPT_DIR/data/activity.db"
-VAULT_PATH="${VAULT_PATH:-~/your-sync-folder}"
+VAULT_PATH="${VAULT_PATH:-}"
 SYNC_DIR="$VAULT_PATH/productivity-monitor"
 SYNC_FILE="$SYNC_DIR/recommendations.json"
 

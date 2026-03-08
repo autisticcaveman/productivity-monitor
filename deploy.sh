@@ -4,7 +4,7 @@
 #
 # Usage:
 #   bash deploy.sh              # uses REMOTE_HOST from .deployrc
-#   bash deploy.sh yourusername@newmac  # one-off override (also saves to .deployrc)
+#   bash deploy.sh user@newmac  # one-off override (also saves to .deployrc)
 #
 # What it does:
 #   1. rsyncs all project code to the remote (excludes machine-specific data/)
@@ -38,8 +38,8 @@ if [ -z "${REMOTE_HOST:-}" ]; then
   echo "Saved to .deployrc"
 fi
 
-REMOTE_PATH="${REMOTE_PATH:-~/productivity-monitor}"
-VAULT_PATH="${VAULT_PATH:-~/your-sync-folder}"
+REMOTE_PATH="${REMOTE_PATH:-$HOME/productivity-monitor}"
+VAULT_PATH="${VAULT_PATH:-}"
 
 echo ""
 echo "══════════════════════════════════════════════"
@@ -83,12 +83,12 @@ ssh -t "$REMOTE_HOST" "cd '$REMOTE_PATH' && bash install.sh"
 
 # ── 5. Export recommendations to vault so remote can import them ──────────────
 echo ""
-echo "▸ Exporting recommendations to Obsidian vault..."
-bash "$SCRIPT_DIR/vault-sync.sh" export
+echo "▸ Exporting recommendations to sync folder..."
+python3 "$SCRIPT_DIR/sync.py" export
 echo "  ✓ Recommendations exported to vault"
 echo ""
 echo "  On the remote machine, run:"
-echo "    bash $REMOTE_PATH/vault-sync.sh import"
+echo "    bash $REMOTE_PATH/sync.py import"
 echo ""
 
 echo "══════════════════════════════════════════════"
