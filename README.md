@@ -4,6 +4,8 @@ A lightweight, self-hosted activity monitor and productivity dashboard for your 
 
 No data leaves your machine. No accounts. No subscriptions.
 
+![Productivity Monitor Dashboard](screenshot.png)
+
 ---
 
 ## What it does
