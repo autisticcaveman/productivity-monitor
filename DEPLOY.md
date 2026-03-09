@@ -301,8 +301,8 @@ python3 /path/to/productivity-monitor/install.py --defaults
 | File | What it does |
 |------|-------------|
 | `monitor.py` | Background daemon — watches active apps, reloads config/categories on every poll; logs truncated every 48h |
-| `dashboard/app.py` | Flask web server — dashboard UI + full Settings API (categories with retroactive recategorization, config, logs, backup/restore, score killers, browser breakdown) |
-| `dashboard/templates/index.html` | Dashboard UI — Bootstrap 5, Chart.js, 6-tab Settings panel, Score Killers panel, Browser Breakdown row, live score toggle on donut legend, drag-and-drop app tags |
+| `dashboard/app.py` | Flask web server — dashboard UI + full Settings API (categories with retroactive recategorization, config, logs, backup/restore, score killers, browser breakdown, restart-monitor endpoint) |
+| `dashboard/templates/index.html` | Dashboard UI — Bootstrap 5, Chart.js, 6-tab Settings panel, Score Killers panel, Browser Breakdown row, live score toggle on donut legend, drag-and-drop app tags, Restart Monitor button in General settings |
 | `categories.json` | Maps app names to productivity categories (editable live via ⚙ Settings panel) |
 | `analyze.py` | Generates insights and recommendations from activity data (runs hourly in background thread) |
 | `install.py` | Cross-platform installer (macOS / Linux / Windows) — interactive with port validation, `--defaults` for headless use |

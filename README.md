@@ -1,6 +1,6 @@
 # Productivity Monitor
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue)](VERSION)
 
 A lightweight, self-hosted activity monitor and productivity dashboard for your personal computer. Runs silently in the background, tracks which applications and windows you use, and presents the data in a local web dashboard with automatic insights and tool recommendations.
 
@@ -25,7 +25,7 @@ No data leaves your machine. No accounts. No subscriptions.
   - Recommendations and insights panel
 - **Generates recommendations** hourly based on your actual usage patterns (distraction rate, context switching, peak hours, etc.)
 - **Syncs recommendations** between machines via any shared folder you already have
-- **Settings panel** (⚙ top-right of the dashboard) for live editing: theme, app categories, browser site rules, auto-categorization, and dashboard port — most changes take effect on the next poll with no restart
+- **Settings panel** (⚙ top-right of the dashboard) for live editing: theme, app categories, browser site rules, auto-categorization, and dashboard port — most changes take effect on the next poll with no restart; **General tab includes a Restart Monitor button** to force the monitor to pick up category changes immediately
 - **Score Killers panel** on the dashboard — shows the top 5 apps eating your score so you know exactly what to cut when your number is low
 - **Log viewer** built into the Settings panel — view and download any service log without touching the terminal
 - **Backup / Restore** — export your config and category rules to a JSON file, restore on any machine

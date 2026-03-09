@@ -227,7 +227,7 @@ def setup_windows(data_dir: str):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    banner(f"Productivity Monitor v1.3.0 — Installer  [{OS}]")
+    banner(f"Productivity Monitor v1.4.0 — Installer  [{OS}]")
 
     print(f"\n  Python:   {PY}")
     print(f"  Platform: {platform.version()[:60]}")

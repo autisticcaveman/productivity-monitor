@@ -7,7 +7,9 @@ Background thread runs analysis every hour.
 """
 
 import json
+import os
 import sqlite3
+import subprocess
 import sys
 import threading
 import time
@@ -31,6 +33,29 @@ app = Flask(__name__)
 @app.route("/favicon.ico")
 def favicon():
     return "", 204
+
+
+@app.route("/api/restart-monitor", methods=["POST"])
+def api_restart_monitor():
+    """Restart the monitor LaunchAgent (macOS). Picks up new categories.json state cleanly."""
+    uid = os.getuid()
+    label = "com.chad.productivity-monitor"
+    try:
+        result = subprocess.run(
+            ["launchctl", "kickstart", "-k", f"gui/{uid}/{label}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            return jsonify({"ok": True, "msg": "Monitor restarted."})
+        # kickstart may fail if already stopped — fall back to bootout+bootstrap
+        plist = Path.home() / "Library" / "LaunchAgents" / f"{label}.plist"
+        subprocess.run(["launchctl", "bootout", f"gui/{uid}/{label}"],
+                       capture_output=True, timeout=5)
+        subprocess.run(["launchctl", "bootstrap", f"gui/{uid}", str(plist)],
+                       capture_output=True, timeout=5)
+        return jsonify({"ok": True, "msg": "Monitor restarted."})
+    except Exception as exc:
+        return jsonify({"ok": False, "msg": str(exc)}), 500
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -470,7 +495,7 @@ def api_score_killers():
         FROM activity
         WHERE timestamp >= ?
           AND category NOT IN (
-              'idle', 'deep_work', 'terminal', 'documentation', 'planning', 'ai_tools'
+              'idle', 'uncategorized', 'deep_work', 'terminal', 'documentation', 'planning', 'ai_tools'
           )
         GROUP BY app
         ORDER BY secs DESC
@@ -541,7 +566,7 @@ def api_backup():
     cfg  = json.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else {}
     cats = json.loads(CATS_PATH.read_text())   if CATS_PATH.exists()   else {}
     return jsonify({
-        "version":    "1.3.0",
+        "version":    "1.4.0",
         "created":    datetime.now().isoformat(timespec="seconds"),
         "config":     cfg,
         "categories": cats,

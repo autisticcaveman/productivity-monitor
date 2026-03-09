@@ -618,8 +618,12 @@
                  style="width:80px;flex-shrink:0;text-align:center"
                  oninput="document.getElementById('portPreview').textContent=this.value||'…'">
         </div>
-        <div style="margin-top:18px">
+        <div style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button class="btn-save" onclick="saveGeneralSettings()">Save General Settings</button>
+          <button class="btn-save" id="restartMonitorBtn"
+                  style="background:var(--card-bg);border:1px solid var(--card-border);color:var(--muted)"
+                  onclick="restartMonitor()">↺ Restart Monitor</button>
+          <span id="restartMonitorMsg" style="font-size:11px;color:var(--muted)"></span>
         </div>
       </div>
 
@@ -1159,6 +1163,37 @@ async function saveGeneralSettings() {
       showToast('Settings saved — takes effect on next monitor poll');
     }
   }
+}
+
+async function restartMonitor() {
+  const btn = document.getElementById('restartMonitorBtn');
+  const msg = document.getElementById('restartMonitorMsg');
+  btn.disabled = true;
+  btn.textContent = '↺ Restarting…';
+  msg.textContent = '';
+  try {
+    const res = await fetch('/api/restart-monitor', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = '✓ Restarted';
+      msg.style.color = 'var(--green)';
+      msg.textContent = 'Monitor restarted — new records will categorize correctly.';
+    } else {
+      btn.textContent = '↺ Restart Monitor';
+      msg.style.color = 'var(--red, #e05)';
+      msg.textContent = data.msg || 'Restart failed.';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    btn.textContent = '↺ Restart Monitor';
+    msg.textContent = 'Request failed.';
+    btn.disabled = false;
+  }
+  setTimeout(() => {
+    btn.textContent = '↺ Restart Monitor';
+    btn.disabled = false;
+    msg.textContent = '';
+  }, 8000);
 }
 
 // ── Categories editor ─────────────────────────────────────────────────────────

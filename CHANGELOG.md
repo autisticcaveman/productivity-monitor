@@ -6,6 +6,22 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.4.0] — 2026-03-09
+
+### Added
+
+#### Settings Panel — General tab
+- **Restart Monitor button** — one-click restart of the background monitor daemon directly from the dashboard. Uses `launchctl kickstart -k` on macOS; falls back to `bootout` + `bootstrap` if the service is in an unexpected state. Shows live feedback (restarting → restarted / error) and auto-resets after 8 seconds. Eliminates the need to use the terminal when a new category entry isn't being picked up by the running process.
+
+#### API
+- `POST /api/restart-monitor` — triggers a clean restart of `com.chad.productivity-monitor` LaunchAgent. Returns `{"ok": true, "msg": "Monitor restarted."}` on success, `{"ok": false, "msg": "..."}` on failure.
+
+### Fixed
+- **Score Killers showing uncategorized apps** — the `/api/score-killers` query excluded productive categories but not `'uncategorized'`. Any record with `category = 'uncategorized'` (e.g. from a brief monitor state issue) would surface as a score killer even if the app was correctly configured. Fixed by adding `'uncategorized'` to the NOT IN exclusion list.
+- **Monitor stale-state categorization bug** — the background monitor process, when running continuously across a categories.json change, could fail to pick up new app entries correctly despite reloading the file each poll. Restart Monitor button and `POST /api/restart-monitor` endpoint provide the clean fix. Retroactive SQL patch applied for affected records.
+
+---
+
 ## [1.3.0] — 2026-03-09
 
 ### Added
