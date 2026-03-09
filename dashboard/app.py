@@ -14,7 +14,7 @@ import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 
 BASE_DIR  = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -26,6 +26,11 @@ CATS_PATH   = BASE_DIR / "categories.json"
 CONFIG_PATH = BASE_DIR / "config.json"
 
 app = Flask(__name__)
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return "", 204
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -58,6 +63,45 @@ def productivity_score(cat_secs: dict, total_active: float) -> int:
 
 def db_exists() -> bool:
     return DB_PATH.exists()
+
+
+def categorize(app: str, window: str, cats: dict) -> str:
+    """Map app + window title → category key. Mirror of monitor.py — keep in sync."""
+    a = app.lower()
+    w = window.lower()
+    for cat_name, cat_data in cats.items():
+        if cat_name in ("idle", "uncategorized"):
+            continue
+        apps = [x.lower() for x in cat_data.get("apps", [])]
+        if any(x in a for x in apps):
+            for override in cat_data.get("window_overrides", []):
+                keywords = [k.lower() for k in override.get("keywords", [])]
+                if any(k in w for k in keywords):
+                    return override["category"]
+            return cat_name
+    return "uncategorized"
+
+
+def recategorize_recent(cats: dict, days: int = 7) -> int:
+    """Retroactively update categories for recent non-idle records using new cats dict.
+    Returns count of rows updated."""
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, app, window_title, category FROM activity "
+        "WHERE timestamp >= ? AND category != 'idle'",
+        (cutoff,),
+    ).fetchall()
+    updates = [
+        (categorize(r["app"], r["window_title"] or "", cats), r["id"])
+        for r in rows
+        if categorize(r["app"], r["window_title"] or "", cats) != r["category"]
+    ]
+    if updates:
+        conn.executemany("UPDATE activity SET category=? WHERE id=?", updates)
+        conn.commit()
+    conn.close()
+    return len(updates)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -140,6 +184,7 @@ def api_today():
             "labels": chart_labels,
             "values": chart_values,
             "colors": chart_colors,
+            "keys":   [cat for cat, secs in sorted(cat_secs.items(), key=lambda x: x[1], reverse=True) if secs > 0],
         },
     })
 
@@ -320,7 +365,8 @@ def api_save_categories():
         return jsonify({"error": "invalid payload"}), 400
     with open(CATS_PATH, "w") as f:
         json.dump(data, f, indent=2)
-    return jsonify({"ok": True})
+    updated = recategorize_recent(data)
+    return jsonify({"ok": True, "recategorized": updated})
 
 
 @app.route("/api/config")
@@ -330,6 +376,7 @@ def api_get_config():
         "auto_categorize":        cfg.get("auto_categorize", True),
         "poll_interval_seconds":  cfg["poll_interval_seconds"],
         "idle_threshold_seconds": cfg["idle_threshold_seconds"],
+        "dashboard_port":         cfg["dashboard_port"],
     })
 
 
@@ -349,13 +396,178 @@ def api_save_config():
             pass
 
     # Only allow safe dashboard-editable keys
-    safe_keys = {"auto_categorize", "poll_interval_seconds", "idle_threshold_seconds"}
+    safe_keys = {"auto_categorize", "poll_interval_seconds", "idle_threshold_seconds", "dashboard_port"}
     for k, v in data.items():
         if k in safe_keys:
             current[k] = v
 
     with open(CONFIG_PATH, "w") as f:
         json.dump(current, f, indent=2)
+    return jsonify({"ok": True})
+
+
+# ── Logs API ─────────────────────────────────────────────────────────────────
+
+@app.route("/api/logs")
+def api_logs():
+    log_name = request.args.get("log", "monitor")
+    cfg      = config_loader.load()
+    data_dir = Path(cfg["data_dir"])
+    log_map  = {
+        "monitor":       data_dir / "monitor.log",
+        "monitor-out":   data_dir / "monitor-out.log",
+        "monitor-err":   data_dir / "monitor-err.log",
+        "dashboard":     data_dir / "dashboard-out.log",
+        "dashboard-err": data_dir / "dashboard-err.log",
+    }
+    path = log_map.get(log_name)
+    if not path:
+        return jsonify({"error": "unknown log"}), 400
+    if not path.exists():
+        return jsonify({"lines": [], "exists": False, "path": str(path)})
+    try:
+        with open(path, errors="replace") as f:
+            lines = f.readlines()
+        return jsonify({
+            "lines":  [l.rstrip() for l in lines[-200:]],
+            "exists": True,
+            "path":   str(path),
+            "total":  len(lines),
+        })
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+# ── Log download ─────────────────────────────────────────────────────────────
+
+@app.route("/api/logs/download")
+def api_logs_download():
+    log_name = request.args.get("log", "monitor")
+    cfg      = config_loader.load()
+    data_dir = Path(cfg["data_dir"])
+    log_map  = {
+        "monitor":       data_dir / "monitor.log",
+        "monitor-out":   data_dir / "monitor-out.log",
+        "monitor-err":   data_dir / "monitor-err.log",
+        "dashboard":     data_dir / "dashboard-out.log",
+        "dashboard-err": data_dir / "dashboard-err.log",
+    }
+    path = log_map.get(log_name)
+    if not path or not path.exists():
+        return jsonify({"error": "log not found"}), 404
+    return send_file(str(path), as_attachment=True, download_name=path.name)
+
+
+# ── Score killers ─────────────────────────────────────────────────────────────
+
+@app.route("/api/score-killers")
+def api_score_killers():
+    """Top 5 apps by time today in non-productive categories."""
+    today = date.today().isoformat()
+    conn  = get_db()
+    rows  = conn.execute("""
+        SELECT app, category, SUM(duration_seconds) AS secs
+        FROM activity
+        WHERE timestamp >= ?
+          AND category NOT IN (
+              'idle', 'deep_work', 'terminal', 'documentation', 'planning', 'ai_tools'
+          )
+        GROUP BY app
+        ORDER BY secs DESC
+        LIMIT 5
+    """, (today,)).fetchall()
+    conn.close()
+    return jsonify([{
+        "app":      r["app"],
+        "category": r["category"],
+        "minutes":  round(r["secs"] / 60, 1),
+    } for r in rows])
+
+
+# ── Browser breakdown ─────────────────────────────────────────────────────────
+
+@app.route("/api/browser-breakdown")
+def api_browser_breakdown():
+    """Today's category breakdown filtered to browser apps only."""
+    today = date.today().isoformat()
+    cats  = load_categories()
+    browser_apps = [a.lower() for a in cats.get("browsing", {}).get("apps", [])]
+
+    empty = {"score": 0, "total_minutes": 0.0,
+             "chart": {"labels": [], "values": [], "colors": [], "keys": []}}
+    if not browser_apps:
+        return jsonify(empty)
+
+    placeholders = ",".join("?" * len(browser_apps))
+    conn = get_db()
+    rows = conn.execute(f"""
+        SELECT category, SUM(duration_seconds) AS secs
+        FROM activity
+        WHERE timestamp >= ? AND category != 'idle'
+          AND lower(app) IN ({placeholders})
+        GROUP BY category
+        ORDER BY secs DESC
+    """, [today] + browser_apps).fetchall()
+    conn.close()
+
+    cat_secs     = {r["category"]: r["secs"] for r in rows}
+    total_active = sum(cat_secs.values())
+
+    chart_labels, chart_values, chart_colors, chart_keys = [], [], [], []
+    for cat, secs in sorted(cat_secs.items(), key=lambda x: x[1], reverse=True):
+        if secs > 0:
+            info = cats.get(cat, {})
+            chart_labels.append(info.get("label", cat.replace("_", " ").title()))
+            chart_values.append(round(secs / 60, 1))
+            chart_colors.append(info.get("color", "#607D8B"))
+            chart_keys.append(cat)
+
+    return jsonify({
+        "score":         productivity_score(cat_secs, total_active),
+        "total_minutes": round(total_active / 60, 1),
+        "chart": {
+            "labels": chart_labels,
+            "values": chart_values,
+            "colors": chart_colors,
+            "keys":   chart_keys,
+        },
+    })
+
+
+# ── Backup / Restore API ──────────────────────────────────────────────────────
+
+@app.route("/api/backup")
+def api_backup():
+    cfg  = json.loads(CONFIG_PATH.read_text()) if CONFIG_PATH.exists() else {}
+    cats = json.loads(CATS_PATH.read_text())   if CATS_PATH.exists()   else {}
+    return jsonify({
+        "version":    "1.3.0",
+        "created":    datetime.now().isoformat(timespec="seconds"),
+        "config":     cfg,
+        "categories": cats,
+    })
+
+
+@app.route("/api/restore", methods=["POST"])
+def api_restore():
+    data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "invalid payload"}), 400
+    errors = []
+    if "config" in data:
+        try:
+            with open(CONFIG_PATH, "w") as f:
+                json.dump(data["config"], f, indent=2)
+        except Exception as exc:
+            errors.append(f"config: {exc}")
+    if "categories" in data:
+        try:
+            with open(CATS_PATH, "w") as f:
+                json.dump(data["categories"], f, indent=2)
+        except Exception as exc:
+            errors.append(f"categories: {exc}")
+    if errors:
+        return jsonify({"ok": False, "errors": errors}), 500
     return jsonify({"ok": True})
 
 

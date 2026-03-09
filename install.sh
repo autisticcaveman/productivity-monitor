@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# Productivity Monitor — Legacy macOS Install Script (v1.1.0)
+# Productivity Monitor — Legacy macOS Install Script (v1.3.0)
 # Sets up the activity monitor and dashboard as macOS LaunchAgents.
 #
 # NOTE: This is the legacy bash-only installer (macOS only).

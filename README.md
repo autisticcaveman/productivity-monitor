@@ -1,6 +1,6 @@
 # Productivity Monitor
 
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue)](VERSION)
 
 A lightweight, self-hosted activity monitor and productivity dashboard for your personal computer. Runs silently in the background, tracks which applications and windows you use, and presents the data in a local web dashboard with automatic insights and tool recommendations.
 
@@ -17,14 +17,18 @@ No data leaves your machine. No accounts. No subscriptions.
 - **Detects idle time** so AFK periods don't inflate your numbers
 - **Serves a dashboard** at `http://localhost:5555` showing:
   - Live productivity score (0–100)
-  - Today's time breakdown by category (donut chart)
+  - Today's time breakdown by category (donut chart); click any legend item to toggle it and see the score recalculate live
+  - Browser Breakdown row — dedicated second row showing browser-app activity only: Browser Score card + Browser Breakdown donut + Browser Time by Category bars
   - 7-day trend (stacked bar chart)
   - Hourly timeline of today
   - Most active windows and apps
   - Recommendations and insights panel
 - **Generates recommendations** hourly based on your actual usage patterns (distraction rate, context switching, peak hours, etc.)
 - **Syncs recommendations** between machines via any shared folder you already have
-- **Settings panel** (⚙ top-right of the dashboard) for live editing: theme, app categories, browser site rules, and auto-categorization — changes take effect on the next poll, no restart needed
+- **Settings panel** (⚙ top-right of the dashboard) for live editing: theme, app categories, browser site rules, auto-categorization, and dashboard port — most changes take effect on the next poll with no restart
+- **Score Killers panel** on the dashboard — shows the top 5 apps eating your score so you know exactly what to cut when your number is low
+- **Log viewer** built into the Settings panel — view and download any service log without touching the terminal
+- **Backup / Restore** — export your config and category rules to a JSON file, restore on any machine
 
 ---
 
@@ -201,6 +205,10 @@ A 0–100 score calculated from today's active time:
 | 10–24 | Off track |
 | 0–9 | Not much tracked yet |
 
+### Score Killers
+
+Below the category breakdown, the **Score Killers Today** section lists your top 5 apps by time spent in non-productive categories (everything except Deep Work, Terminal, Documentation, Planning, AI Tools, and Idle). This is the fastest answer to "why is my score low today" — no digging required.
+
 ### Recommendations Panel
 
 Pre-seeded with tool and workflow suggestions on first run. Additional data-driven recommendations are generated automatically every hour once you have enough usage history (~1 hour of data). Dismiss any recommendation with the **✕** button — dismissed items don't return.
@@ -215,19 +223,21 @@ Pattern-based recommendations look for:
 
 ### Settings Panel
 
-Click the **⚙** button in the top-right of the header to open the Settings panel. Four tabs:
+Click the **⚙** button in the top-right of the header to open the Settings panel. Six tabs:
 
 #### Appearance
 Switch between **Dark**, **Light**, and **System** (follows your OS) themes. Applied instantly and saved in your browser — no server round-trip.
 
 #### General
-**Auto-categorize apps** toggle. When on (default), the monitor automatically assigns apps to categories using name matching and browser window title rules. When off, every app logs as `uncategorized` — useful while setting up a clean custom ruleset. Saved to `config.json`; takes effect on the next poll (≤ 30 seconds by default).
+- **Auto-categorize apps** toggle. When on (default), the monitor automatically assigns apps to categories using name matching and browser window title rules. When off, every app logs as `uncategorized`. Takes effect on the next poll (≤ 30 seconds).
+- **Dashboard port** field. Change the port the web server listens on. Saved to `config.json`; requires a dashboard restart to take effect (the monitor keeps running — only the web process needs to rebind).
 
 #### App Categories
 Live editor for the app-to-category mappings in `categories.json`:
 
 - Click any category pill to select it
-- Existing apps appear as removable tags — click **×** to remove
+- Existing apps appear as draggable tags — **drag and drop** an app tag onto any other category pill to move it
+- Click **×** to remove an app from a category
 - Type an app process name and press Enter or click **+ Add**
 - Click **Save Categories** — takes effect on the next monitor poll, no restart needed
 
@@ -240,8 +250,24 @@ Manage how browser tabs are classified by window title keywords. Rules are check
 - **Delete** removes a rule; **↑ ↓** reorders priority
 - The **Add New Rule** form at the bottom takes a comma-separated keyword list and a target category
 - Click **Save All Rules** to write changes to `categories.json`
+- Each rule has a **+** button to instantly pre-select its category in the Add Rule form
 
 Example: add `netsec, shodan, exploit-db` → `Deep Work` to count security research as productive time.
+
+#### Logs
+View and download service log files without opening a terminal.
+
+- **Dropdown** — select which log to view: Monitor log (Python logging output), monitor stdout/stderr, dashboard stdout/stderr
+- **↻ Refresh** — reload the current log (shows last 200 lines)
+- **⬇ Download** — download the full raw log file for offline analysis
+- The log viewer auto-scrolls to the most recent entries
+- Log files are automatically truncated every **48 hours** — they never grow without bound
+
+#### Backup
+Export and restore your configuration and category rules.
+
+- **Download Backup** — downloads a JSON file containing your current `config.json` and `categories.json` with a version stamp and timestamp. Safe to commit to your own private repo or store anywhere.
+- **Restore from Backup** — pick a previously downloaded backup file. The UI validates it before showing the Restore button. On confirm, overwrites `config.json` and `categories.json` on the server. Use this when setting up a new machine from a known-good state.
 
 ---
 
@@ -404,19 +430,28 @@ loginctl enable-linger $USER
 ```
 productivity-monitor/
 ├── VERSION             Current version number (semver)
+├── CHANGELOG.md        Per-version change history
 ├── monitor.py          Background daemon — polls active app every N seconds
 │                         reloads categories.json + config.json on every poll
+│                         log files truncated every 48h (no runaway growth)
 ├── dashboard/
-│   ├── app.py          Flask web server — dashboard + settings API
+│   ├── app.py          Flask web server — dashboard + full settings API
+│   │                     endpoints: /api/today, /api/weekly, /api/timeline,
+│   │                     /api/top-windows, /api/score-killers, /api/browser-breakdown,
+│   │                     /api/recommendations, /api/dismiss/<id>, /api/categories,
+│   │                     /api/config, /api/logs, /api/logs/download, /api/backup, /api/restore
 │   └── templates/
 │       └── index.html  Dashboard UI (Bootstrap 5 + Chart.js, dark/light/system theme)
-│                         includes ⚙ Settings panel (theme, categories, browser rules)
+│                         ⚙ Settings panel: Appearance, General, App Categories,
+│                         Browser Rules, Logs, Backup (6 tabs)
+│                         Score Killers panel, drag-and-drop app tags
 ├── analyze.py          Hourly pattern analysis → generates recommendations
 ├── categories.json     App → productivity category mappings (edit via Settings or directly)
 ├── config.json         Your settings — data path, port, sync, intervals, auto_categorize
 ├── config_loader.py    Reads config.json, provides defaults per OS
-├── platform_utils.py   OS abstraction — app detection + idle time
+├── platform_utils.py   OS abstraction — app detection + idle time (macOS/Linux/Windows)
 ├── install.py          Cross-platform installer (macOS / Linux / Windows)
+│                         interactive port selection with validation
 ├── uninstall.py        Cross-platform service removal
 ├── sync.py             Recommendation sync via shared folder
 ├── requirements.txt    Python dependencies
@@ -427,7 +462,7 @@ productivity-monitor/
 ├── DEPLOY.md           Beginner-friendly multi-Mac deployment guide
 └── data/               Created on first run — never committed to git
     ├── activity.db     SQLite database — all your activity data
-    ├── monitor.log     Monitor daemon log
+    ├── monitor.log     Monitor daemon log (truncated every 48h)
     └── *.log           Service output/error logs
 ```
 

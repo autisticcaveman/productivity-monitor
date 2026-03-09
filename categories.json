@@ -1,91 +1,240 @@
 {
-  "deep_work": {
-    "label": "Deep Work",
-    "color": "#4CAF50",
-    "apps": ["code", "cursor", "vim", "neovim", "xcode", "pycharm", "intellij", "sublime text", "atom", "emacs", "zed", "nova", "bbedit"],
-    "window_overrides": []
-  },
-  "terminal": {
-    "label": "Terminal / Dev",
-    "color": "#2196F3",
-    "apps": ["terminal", "iterm", "iterm2", "alacritty", "warp", "hyper", "kitty", "ghostty"]
-  },
-  "communication": {
-    "label": "Communication",
-    "color": "#FF9800",
-    "apps": ["slack", "microsoft teams", "zoom", "discord", "messages", "mail", "outlook", "signal", "telegram", "facetime", "skype", "mattermost"]
-  },
-  "documentation": {
-    "label": "Docs / Writing",
-    "color": "#9C27B0",
-    "apps": ["obsidian", "notion", "word", "microsoft word", "pages", "bear", "typora", "writeroom", "ulysses", "drafts", "logseq", "craft"]
-  },
   "ai_tools": {
-    "label": "AI Tools",
+    "apps": [
+      "claude",
+      "chatgpt"
+    ],
     "color": "#3F51B5",
-    "apps": ["claude", "chatgpt"],
+    "label": "AI Tools",
     "window_overrides": []
   },
   "browsing": {
-    "label": "Browsing",
+    "apps": [
+      "google chrome",
+      "firefox",
+      "safari",
+      "arc",
+      "brave browser",
+      "microsoft edge",
+      "opera",
+      "vivaldi"
+    ],
     "color": "#607D8B",
-    "apps": ["google chrome", "firefox", "safari", "arc", "brave browser", "microsoft edge", "opera", "vivaldi"],
+    "label": "Browsing",
     "window_overrides": [
       {
-        "keywords": ["youtube", "reddit", "twitter", "x.com", "instagram", "facebook", "tiktok", "netflix", "hulu", "twitch", "discord.com", "espn"],
-        "category": "distraction"
+        "category": "distraction",
+        "keywords": [
+          "youtube",
+          "reddit",
+          "twitter",
+          "x.com",
+          "instagram",
+          "facebook",
+          "tiktok",
+          "netflix",
+          "hulu",
+          "twitch",
+          "discord.com",
+          "espn"
+        ]
       },
       {
-        "keywords": ["github", "gitlab", "stackoverflow", "docs.", "documentation", "api reference", "mdn", "devdocs", "man page", "readthedocs", "python.org", "rust-lang"],
-        "category": "deep_work"
+        "category": "deep_work",
+        "keywords": [
+          "github",
+          "gitlab",
+          "stackoverflow",
+          "docs.",
+          "documentation",
+          "api reference",
+          "mdn",
+          "devdocs",
+          "man page",
+          "readthedocs",
+          "python.org",
+          "rust-lang"
+        ]
       },
       {
-        "keywords": ["servicenow", "jira", "confluence", "linear.app", "asana", "trello", "monday.com", "basecamp", "shortcut.com"],
-        "category": "planning"
+        "category": "planning",
+        "keywords": [
+          "servicenow",
+          "jira",
+          "confluence",
+          "linear.app",
+          "asana",
+          "trello",
+          "monday.com",
+          "basecamp",
+          "shortcut.com"
+        ]
       },
       {
-        "keywords": ["gmail", "mail.", "outlook.live", "protonmail", "fastmail"],
-        "category": "communication"
+        "category": "communication",
+        "keywords": [
+          "gmail",
+          "mail.",
+          "outlook.live",
+          "protonmail",
+          "fastmail"
+        ]
       },
       {
-        "keywords": ["claude.ai", "chat.openai", "bard.google", "perplexity"],
-        "category": "ai_tools"
+        "category": "ai_tools",
+        "keywords": [
+          "claude.ai",
+          "chat.openai",
+          "bard.google",
+          "perplexity"
+        ]
       }
     ]
   },
-  "planning": {
-    "label": "Planning / PM",
-    "color": "#00BCD4",
-    "apps": ["omnifocus", "things", "things 3", "todoist", "linear", "reminders"]
-  },
-  "meetings": {
-    "label": "Meetings / Calls",
-    "color": "#F44336",
-    "apps": ["zoom", "webex", "goto meeting", "whereby", "around", "tuple"]
-  },
-  "distraction": {
-    "label": "Distraction",
-    "color": "#E91E63",
-    "apps": ["youtube music", "spotify"]
+  "communication": {
+    "apps": [
+      "slack",
+      "microsoft teams",
+      "zoom",
+      "discord",
+      "messages",
+      "mail",
+      "outlook",
+      "signal",
+      "telegram",
+      "facetime",
+      "skype",
+      "mattermost"
+    ],
+    "color": "#FF9800",
+    "label": "Communication"
   },
   "creative": {
-    "label": "Creative",
+    "apps": [
+      "figma",
+      "sketch",
+      "adobe photoshop",
+      "adobe illustrator",
+      "affinity designer",
+      "affinity photo",
+      "canva",
+      "pixelmator",
+      "screenflow",
+      "davinci resolve"
+    ],
     "color": "#FF5722",
-    "apps": ["figma", "sketch", "adobe photoshop", "adobe illustrator", "affinity designer", "affinity photo", "canva", "pixelmator", "screenflow", "davinci resolve"]
+    "label": "Creative"
   },
-  "system": {
-    "label": "System / Util",
-    "color": "#78909C",
-    "apps": ["finder", "system preferences", "system settings", "activity monitor", "disk utility", "preview", "console", "keychain access", "automator", "script editor"]
+  "deep_work": {
+    "apps": [
+      "code",
+      "cursor",
+      "vim",
+      "neovim",
+      "xcode",
+      "pycharm",
+      "intellij",
+      "sublime text",
+      "atom",
+      "emacs",
+      "zed",
+      "nova",
+      "bbedit",
+      "vscode",
+      "goose"
+    ],
+    "color": "#4CAF50",
+    "label": "Deep Work",
+    "window_overrides": []
+  },
+  "distraction": {
+    "apps": [
+      "youtube music",
+      "spotify"
+    ],
+    "color": "#E91E63",
+    "label": "Distraction"
+  },
+  "documentation": {
+    "apps": [
+      "obsidian",
+      "notion",
+      "word",
+      "microsoft word",
+      "pages",
+      "bear",
+      "typora",
+      "writeroom",
+      "ulysses",
+      "drafts",
+      "logseq",
+      "craft"
+    ],
+    "color": "#9C27B0",
+    "label": "Docs / Writing"
   },
   "idle": {
-    "label": "Idle",
+    "apps": [],
     "color": "#37474F",
-    "apps": []
+    "label": "Idle"
+  },
+  "meetings": {
+    "apps": [
+      "zoom",
+      "webex",
+      "goto meeting",
+      "whereby",
+      "around",
+      "tuple"
+    ],
+    "color": "#F44336",
+    "label": "Meetings / Calls"
+  },
+  "planning": {
+    "apps": [
+      "omnifocus",
+      "things",
+      "things 3",
+      "todoist",
+      "linear",
+      "reminders"
+    ],
+    "color": "#00BCD4",
+    "label": "Planning / PM"
+  },
+  "system": {
+    "apps": [
+      "finder",
+      "system preferences",
+      "system settings",
+      "activity monitor",
+      "disk utility",
+      "preview",
+      "console",
+      "keychain access",
+      "automator",
+      "script editor"
+    ],
+    "color": "#78909C",
+    "label": "System / Util"
+  },
+  "terminal": {
+    "apps": [
+      "terminal",
+      "iterm",
+      "iterm2",
+      "alacritty",
+      "warp",
+      "hyper",
+      "kitty",
+      "ghostty"
+    ],
+    "color": "#2196F3",
+    "label": "Terminal / Dev"
   },
   "uncategorized": {
-    "label": "Other",
+    "apps": [],
     "color": "#546E7A",
-    "apps": []
+    "label": "Other"
   }
 }

@@ -257,6 +257,11 @@
   }
   .cat-sel-btn:hover  { color: var(--text); }
   .cat-sel-btn.active { color: #fff; border-color: transparent !important; }
+  /* Drag-over target highlight */
+  .cat-sel-btn.drag-over {
+    background: var(--accent) !important; color: #fff !important;
+    transform: scale(1.08); transition: transform .1s;
+  }
 
   /* App tags */
   .apps-wrap { display: flex; flex-wrap: wrap; gap: 6px; min-height: 32px; margin-bottom: 12px; }
@@ -265,6 +270,7 @@
     background: var(--input-bg); border: 1px solid var(--card-border);
     border-radius: 6px; padding: 3px 8px;
     font-size: 11px; color: var(--text);
+    cursor: grab;
   }
   .app-tag-rm {
     background: none; border: none; color: var(--muted);
@@ -304,6 +310,7 @@
     font-size: 11px; cursor: pointer; transition: all .15s;
   }
   .btn-sm-danger:hover { border-color: var(--red); color: var(--red); }
+  .btn-sm-add    { background:var(--green); color:#000; border:none; border-radius:4px; padding:2px 7px; font-size:11px; cursor:pointer; font-weight:700; }
 
   /* Browser rule cards */
   .rule-card {
@@ -317,6 +324,16 @@
     font-size: 10px; color: var(--text);
   }
 
+  /* Score killers */
+  .killer-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0; border-bottom: 1px solid var(--card-border);
+    font-size: 11px;
+  }
+  .killer-row:last-child { border-bottom: none; }
+  .killer-app { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .killer-time { color: var(--muted); white-space: nowrap; font-weight: 700; }
+
   /* Toast */
   .toast-msg {
     position: fixed; bottom: 24px; right: 24px;
@@ -327,6 +344,55 @@
     pointer-events: none; z-index: 9999;
   }
   .toast-msg.show { opacity: 1; }
+
+  /* Log viewer */
+  .log-viewer {
+    background: #07070f;
+    border: 1px solid var(--card-border);
+    border-radius: 7px;
+    padding: 10px 12px;
+    font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #8da0b8;
+    overflow-y: auto;
+    max-height: 340px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .light-theme .log-viewer {
+    background: #f0f0f8;
+    color: #445566;
+    border-color: #d0d8ee;
+  }
+  .log-empty {
+    font-size: 11px; color: var(--muted); font-style: italic;
+  }
+  .log-path {
+    font-size: 9px; color: var(--muted); margin-bottom: 6px;
+    font-family: 'SF Mono', monospace; word-break: break-all;
+  }
+
+  /* Backup section */
+  .backup-action {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid var(--card-border);
+  }
+  .backup-action:last-child { border-bottom: none; }
+  .backup-action-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .backup-file-input {
+    display: none;
+  }
+  .btn-file-pick {
+    background: var(--input-bg); border: 1px dashed var(--card-border);
+    color: var(--muted); border-radius: 7px; padding: 8px 14px;
+    font-size: 11px; cursor: pointer; text-align: center; width: 100%;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-file-pick:hover { border-color: var(--accent); color: var(--text); }
+  #restoreFilename {
+    font-size: 10px; color: var(--muted); margin-top: 4px; word-break: break-all;
+  }
 </style>
 </head>
 <body>
@@ -392,6 +458,48 @@
         <hr class="dim">
         <div class="card-label">Top Categories Today</div>
         <div id="topCats"></div>
+        <div id="killersSection" style="display:none">
+          <hr class="dim" style="margin-top:10px">
+          <div class="card-label" style="color:var(--red)">Score Killers Today</div>
+          <div id="scoreKillers"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 1b: Browser breakdown -->
+  <div class="row g-3 mb-3">
+
+    <!-- Browser score card -->
+    <div class="col-6 col-md-2">
+      <div class="card h-100 p-3 text-center d-flex flex-column justify-content-center">
+        <div class="card-label">Browser Score</div>
+        <div class="score-number score-mid" id="browserScoreNum">—</div>
+        <div class="score-sublabel" id="browserScoreLabel">…</div>
+        <hr class="dim">
+        <div class="stat-chip">
+          <div class="stat-val" id="browserTotalMins">—</div>
+          <div class="stat-lbl">Browser Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Browser donut -->
+    <div class="col-6 col-md-3">
+      <div class="card h-100 p-3">
+        <div class="card-label">Browser Breakdown</div>
+        <div style="position:relative;height:170px">
+          <canvas id="browserDonutChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Browser category bars -->
+    <div class="col-12 col-md-7">
+      <div class="card h-100 p-3">
+        <div class="card-label">Browser Time by Category</div>
+        <div id="browserTopCats"><span style="font-size:11px;color:var(--muted)">Loading…</span></div>
       </div>
     </div>
 
@@ -455,6 +563,8 @@
       <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-general">General</a></li>
       <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-categories">App Categories</a></li>
       <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-browser">Browser Rules</a></li>
+      <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-logs" onclick="loadLogs()">Logs</a></li>
+      <li class="nav-item"><a class="nav-link"        data-bs-toggle="pill" href="#stg-backup">Backup</a></li>
     </ul>
 
     <div class="tab-content">
@@ -493,6 +603,20 @@
           <div class="form-check form-switch" style="margin-top:3px;flex-shrink:0">
             <input class="form-check-input" type="checkbox" id="autoCatToggle" role="switch">
           </div>
+        </div>
+        <div class="stg-row">
+          <div style="flex:1;padding-right:12px">
+            <div style="font-size:13px;font-weight:600">Dashboard Port</div>
+            <div class="stg-desc">
+              Served at <code style="font-size:10px">http://localhost:<span id="portPreview">5555</span></code>.
+              Changing the port writes to config.json — the dashboard must be restarted
+              before it will listen on the new port.
+            </div>
+          </div>
+          <input class="stg-input" type="number" id="portInput"
+                 min="1024" max="65535"
+                 style="width:80px;flex-shrink:0;text-align:center"
+                 oninput="document.getElementById('portPreview').textContent=this.value||'…'">
         </div>
         <div style="margin-top:18px">
           <button class="btn-save" onclick="saveGeneralSettings()">Save General Settings</button>
@@ -537,7 +661,9 @@
           <div class="stg-label">Add New Rule</div>
           <div class="mb-2">
             <label class="stg-desc mb-1">Keywords (comma-separated)</label>
-            <input class="stg-input" id="newRuleKeywords" placeholder="youtube, twitch, netflix">
+            <input class="stg-input" id="newRuleKeywords" placeholder="youtube, twitch, netflix"
+              autocomplete="off"
+              onkeydown="if(event.key==='Enter') addRule()">
           </div>
           <div class="mb-3">
             <label class="stg-desc mb-1">Classify as</label>
@@ -546,10 +672,60 @@
             </select>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn-save" onclick="addRule()">Add Rule</button>
-            <button class="btn-save" onclick="saveCategories()" style="background:var(--green)">Save All Rules</button>
+            <button type="button" class="btn-save" onclick="addRule()">Add Rule</button>
+            <button type="button" class="btn-save" onclick="saveCategories()" style="background:var(--green)">Save All Rules</button>
           </div>
         </div>
+      </div>
+
+      <!-- ── Logs ───────────────────────────────────── -->
+      <div class="tab-pane fade" id="stg-logs">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <select class="stg-select" id="logFileSelect" onchange="loadLogs()" style="flex:1">
+            <option value="monitor">Monitor log</option>
+            <option value="dashboard-err">Dashboard errors</option>
+            <option value="dashboard">Dashboard (stdout)</option>
+            <option value="monitor-err">Monitor (stderr)</option>
+            <option value="monitor-out">Monitor (stdout)</option>
+          </select>
+          <button class="btn-save" onclick="loadLogs()" style="white-space:nowrap;padding:6px 12px">↻ Refresh</button>
+          <button class="btn-save" onclick="downloadLog()" style="white-space:nowrap;padding:6px 12px;background:var(--green)" title="Download log file">⬇</button>
+        </div>
+        <div class="log-path" id="logPath">—</div>
+        <div class="log-viewer" id="logViewer">
+          <span class="log-empty">Select a log and click Refresh.</span>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:var(--muted)" id="logMeta"></div>
+      </div>
+
+      <!-- ── Backup / Restore ────────────────────────── -->
+      <div class="tab-pane fade" id="stg-backup">
+
+        <div class="backup-action">
+          <div>
+            <div class="backup-action-title">📦 Download Backup</div>
+            <p class="stg-desc">Saves a JSON file containing your current <code>config.json</code>
+              and <code>categories.json</code>. Store it anywhere — Obsidian vault, Dropbox, local folder.</p>
+          </div>
+          <button class="btn-save" onclick="downloadBackup()">Download Backup</button>
+        </div>
+
+        <div class="backup-action" style="margin-top:14px">
+          <div>
+            <div class="backup-action-title">♻️ Restore from Backup</div>
+            <p class="stg-desc">Upload a previously downloaded backup file. Both config and categories will be
+              overwritten. A dashboard reload is required after restoring.</p>
+          </div>
+          <label class="btn-file-pick" for="restoreFile">
+            Click to choose a backup file…
+          </label>
+          <input type="file" id="restoreFile" class="backup-file-input" accept=".json"
+                 onchange="handleRestoreFile(this)">
+          <div id="restoreFilename"></div>
+          <button class="btn-save" id="restoreBtn" onclick="restoreBackup()"
+                  style="display:none;background:var(--yellow);color:#000">Restore Selected Backup</button>
+        </div>
+
       </div>
 
     </div><!-- /tab-content -->
@@ -562,8 +738,11 @@
 <script>
 // ── Config & state ────────────────────────────────────────────────────────────
 const CATS = {{ categories | tojson }};
-let donutChart  = null;
-let weeklyChart = null;
+let donutChart    = null;
+let weeklyChart   = null;
+let _chartCatKeys = [];   // ordered list of category keys matching donut slices
+let browserDonutChart = null;
+let _browserCatKeys   = [];   // ordered list of category keys matching browser donut slices
 
 // Live-editable copy of categories (loaded when settings panel opens)
 let settingsCats = null;
@@ -610,8 +789,9 @@ function applyTheme(theme) {
   localStorage.setItem('theme', theme);
   document.querySelectorAll('input[name="theme"]').forEach(r => { r.checked = r.value === theme; });
   // Redraw charts with updated colors
-  if (donutChart)  { donutChart.destroy();  donutChart  = null; loadToday();  }
-  if (weeklyChart) { weeklyChart.destroy(); weeklyChart = null; loadWeekly(); }
+  if (donutChart)       { donutChart.destroy();       donutChart       = null; loadToday();            }
+  if (browserDonutChart){ browserDonutChart.destroy(); browserDonutChart = null; loadBrowserBreakdown(); }
+  if (weeklyChart)      { weeklyChart.destroy();      weeklyChart      = null; loadWeekly();           }
 }
 
 function getChartColors() {
@@ -671,6 +851,7 @@ async function loadToday() {
   document.getElementById('idleHrs').textContent   = fmtMins(d.idle_minutes);
 
   if (d.chart.labels.length) {
+    _chartCatKeys = d.chart.keys || [];
     const { card } = getChartColors();
     if (donutChart) donutChart.destroy();
     donutChart = new Chart(document.getElementById('donutChart'), {
@@ -682,7 +863,16 @@ async function loadToday() {
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '68%',
         plugins: {
-          legend: { position: 'right', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim(), font:{size:10}, padding:8, boxWidth:9 } },
+          legend: {
+            position: 'right',
+            labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim(), font:{size:10}, padding:8, boxWidth:9 },
+            onClick(e, legendItem, legend) {
+              const ci = legend.chart;
+              ci.toggleDataVisibility(legendItem.index);
+              ci.update();
+              recalcScoreFromChart();
+            },
+          },
           tooltip: { callbacks: { label: c => ` ${fmtMins(c.raw)}` } },
         },
       },
@@ -702,6 +892,119 @@ async function loadToday() {
       </div>
     </div>
   `).join('');
+}
+
+// Recalculate + display the productivity score using only currently-visible donut slices.
+// Called whenever the user toggles a legend item on the donut chart.
+function recalcScoreFromChart() {
+  if (!donutChart || !_chartCatKeys.length) return;
+  const PRODUCTIVE  = new Set(['deep_work','terminal','documentation','planning','ai_tools']);
+  const DISTRACTION = 'distraction';
+  const dataset     = donutChart.data.datasets[0];
+  let productive = 0, distraction = 0, totalActive = 0;
+  _chartCatKeys.forEach((key, i) => {
+    if (!donutChart.getDataVisibility(i)) return;   // slice toggled off
+    const mins = dataset.data[i] || 0;
+    totalActive += mins;
+    if (PRODUCTIVE.has(key))  productive  += mins;
+    if (key === DISTRACTION)  distraction += mins;
+  });
+  const score = totalActive > 0
+    ? Math.max(0, Math.min(100, Math.round((productive / totalActive) * 100 - (distraction / totalActive) * 35)))
+    : 0;
+  const el = document.getElementById('scoreNum');
+  el.textContent = score;
+  el.className   = `score-number ${scoreClass(score)}`;
+  document.getElementById('scoreLabel').textContent = scoreText(score);
+}
+
+// ── Browser breakdown ─────────────────────────────────────────────────────────
+function browserScoreText(s, totalMins) {
+  if (!totalMins) return 'No browser activity yet';
+  if (s >= 85) return 'Excellent browser focus';
+  if (s >= 65) return 'Mostly productive browsing';
+  if (s >= 45) return 'Mixed browser use';
+  if (s >= 25) return 'Heavy distraction browsing';
+  if (s >  0)  return 'Unproductive browsing';
+  return 'No rules matched — general browsing';
+}
+
+async function loadBrowserBreakdown() {
+  const d = await fetch('/api/browser-breakdown').then(r => r.json());
+
+  const el = document.getElementById('browserScoreNum');
+  el.textContent = d.score;
+  el.className   = `score-number ${scoreClass(d.score)}`;
+  document.getElementById('browserScoreLabel').textContent = browserScoreText(d.score, d.total_minutes);
+  document.getElementById('browserTotalMins').textContent  = fmtMins(d.total_minutes);
+
+  if (d.chart.labels.length) {
+    _browserCatKeys = d.chart.keys || [];
+    const { card } = getChartColors();
+    if (browserDonutChart) browserDonutChart.destroy();
+    browserDonutChart = new Chart(document.getElementById('browserDonutChart'), {
+      type: 'doughnut',
+      data: {
+        labels:   d.chart.labels,
+        datasets: [{ data: d.chart.values, backgroundColor: d.chart.colors, borderColor: card, borderWidth: 2 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text').trim(), font:{size:10}, padding:8, boxWidth:9 },
+            onClick(e, legendItem, legend) {
+              const ci = legend.chart;
+              ci.toggleDataVisibility(legendItem.index);
+              ci.update();
+              recalcBrowserScoreFromChart();
+            },
+          },
+          tooltip: { callbacks: { label: c => ` ${fmtMins(c.raw)}` } },
+        },
+      },
+    });
+  }
+
+  // Category bars
+  const pairs = (d.chart.keys || []).map((k, i) => [k, d.chart.values[i]]);
+  const maxM  = pairs[0]?.[1] || 1;
+  document.getElementById('browserTopCats').innerHTML = pairs.length
+    ? pairs.map(([cat, mins]) => `
+      <div class="cat-row">
+        <div class="cat-row-label">
+          <span style="color:${catColor(cat)}">${catLabel(cat)}</span>
+          <span style="color:var(--muted)">${fmtMins(mins)}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background:${catColor(cat)};width:${(mins/maxM)*100}%"></div>
+        </div>
+      </div>`).join('')
+    : '<span style="font-size:11px;color:var(--muted)">No browser activity recorded today.</span>';
+}
+
+// Recalculate browser score when legend items are toggled on the browser donut.
+function recalcBrowserScoreFromChart() {
+  if (!browserDonutChart || !_browserCatKeys.length) return;
+  const PRODUCTIVE  = new Set(['deep_work','terminal','documentation','planning','ai_tools']);
+  const DISTRACTION = 'distraction';
+  const dataset     = browserDonutChart.data.datasets[0];
+  let productive = 0, distraction = 0, totalActive = 0;
+  _browserCatKeys.forEach((key, i) => {
+    if (!browserDonutChart.getDataVisibility(i)) return;
+    const mins = dataset.data[i] || 0;
+    totalActive += mins;
+    if (PRODUCTIVE.has(key))  productive  += mins;
+    if (key === DISTRACTION)  distraction += mins;
+  });
+  const score = totalActive > 0
+    ? Math.max(0, Math.min(100, Math.round((productive / totalActive) * 100 - (distraction / totalActive) * 35)))
+    : 0;
+  const el = document.getElementById('browserScoreNum');
+  el.textContent = score;
+  el.className   = `score-number ${scoreClass(score)}`;
+  document.getElementById('browserScoreLabel').textContent = browserScoreText(score, totalActive);
 }
 
 // ── Weekly ────────────────────────────────────────────────────────────────────
@@ -806,7 +1109,7 @@ function updateDate() {
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 }
 async function fastRefresh() {
-  await Promise.all([loadStatus(), loadToday(), loadTimeline(), loadWindows()]);
+  await Promise.all([loadStatus(), loadToday(), loadBrowserBreakdown(), loadTimeline(), loadWindows(), loadScoreKillers()]);
 }
 async function slowRefresh() {
   await Promise.all([loadWeekly(), loadRecs()]);
@@ -822,19 +1125,40 @@ setInterval(slowRefresh, 300_000);
 // ════════════════════════════════════════════════════
 
 // ── General settings ──────────────────────────────────────────────────────────
+let _loadedPort = 5555;  // track original so we know if user changed it
+
 async function loadGeneralSettings() {
   const cfg = await fetch('/api/config').then(r => r.json());
   document.getElementById('autoCatToggle').checked = cfg.auto_categorize !== false;
+  _loadedPort = cfg.dashboard_port || 5555;
+  document.getElementById('portInput').value   = _loadedPort;
+  document.getElementById('portPreview').textContent = _loadedPort;
 }
 
 async function saveGeneralSettings() {
-  const auto = document.getElementById('autoCatToggle').checked;
+  const auto    = document.getElementById('autoCatToggle').checked;
+  const portRaw = parseInt(document.getElementById('portInput').value, 10);
+
+  if (isNaN(portRaw) || portRaw < 1024 || portRaw > 65535) {
+    showToast('Port must be a number between 1024 and 65535');
+    return;
+  }
+
+  const portChanged = portRaw !== _loadedPort;
   const res = await fetch('/api/config', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ auto_categorize: auto }),
+    body: JSON.stringify({ auto_categorize: auto, dashboard_port: portRaw }),
   });
-  if (res.ok) showToast('Settings saved — takes effect on next monitor poll');
+
+  if (res.ok) {
+    if (portChanged) {
+      _loadedPort = portRaw;
+      showToast(`Port saved as ${portRaw} — restart the dashboard to apply`);
+    } else {
+      showToast('Settings saved — takes effect on next monitor poll');
+    }
+  }
 }
 
 // ── Categories editor ─────────────────────────────────────────────────────────
@@ -856,7 +1180,10 @@ function renderCatList() {
     .map(([k, v]) => `
       <button class="cat-sel-btn ${k === selectedCat ? 'active' : ''}"
               style="${k === selectedCat ? `background:${v.color}` : `border-color:${v.color}`}"
-              onclick="selectCat('${k}')">${v.label}</button>
+              onclick="selectCat('${k}')"
+              ondragover="catDragOver(event, this)"
+              ondragleave="catDragLeave(this)"
+              ondrop="dropAppToCat(event, '${k}')">${v.label}</button>
     `).join('');
 }
 
@@ -873,7 +1200,9 @@ function renderCatEditor() {
   document.getElementById('catEditorTitle').textContent = `Apps in: ${cat.label}`;
   document.getElementById('catAppsList').innerHTML = apps.length
     ? apps.map((app, i) => `
-        <div class="app-tag">
+        <div class="app-tag" draggable="true"
+             ondragstart="startAppDrag(event, '${app.replace(/'/g,"\\'")}', '${selectedCat}')"
+             ondragend="endAppDrag(event)">
           ${app}
           <button class="app-tag-rm" onclick="removeApp(${i})" title="Remove">×</button>
         </div>`).join('')
@@ -943,6 +1272,7 @@ function renderBrowserRules() {
         </div>
         <div class="d-flex align-items-center gap-2">
           <span style="font-size:10px;color:var(--muted)">→</span>
+          <button class="btn-sm-add" onclick="startAddToRule('${rule.category}')" title="Add keyword to this category">+</button>
           <span class="pill" style="background:${color}">${label}</span>
           <button class="btn-sm-danger ms-auto" onclick="deleteRule(${i})">Delete</button>
           <button class="btn-sm-danger" onclick="moveRule(${i}, -1)" title="Move up">↑</button>
@@ -975,6 +1305,195 @@ function addRule() {
   document.getElementById('newRuleKeywords').value = '';
   renderBrowserRules();
   showToast('Rule added — click "Save All Rules" to persist');
+}
+
+function startAddToRule(cat) {
+  // Pre-select the category and scroll/focus the keywords input
+  document.getElementById('newRuleCategory').value = cat;
+  document.getElementById('newRuleKeywords').value = '';
+  const input = document.getElementById('newRuleKeywords');
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  input.focus();
+}
+
+// ── Score killers ─────────────────────────────────────────────────────────────
+async function loadScoreKillers() {
+  const killers = await fetch('/api/score-killers').then(r => r.json());
+  const section = document.getElementById('killersSection');
+  const el      = document.getElementById('scoreKillers');
+  if (!killers.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  el.innerHTML = killers.map(k => `
+    <div class="killer-row">
+      <span class="killer-app">${k.app}</span>
+      <span class="pill" style="background:${catColor(k.category)}">${catLabel(k.category)}</span>
+      <span class="killer-time">${fmtMins(k.minutes)}</span>
+    </div>
+  `).join('');
+}
+
+// ── App category drag-and-drop ─────────────────────────────────────────────────
+let _dragApp     = null;
+let _dragFromCat = null;
+
+function startAppDrag(event, app, fromCat) {
+  _dragApp     = app;
+  _dragFromCat = fromCat;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', app);
+  event.currentTarget.style.opacity = '0.45';
+}
+
+function endAppDrag(event) {
+  event.currentTarget.style.opacity = '';
+  _dragApp = _dragFromCat = null;
+  document.querySelectorAll('.cat-sel-btn').forEach(b => b.classList.remove('drag-over'));
+}
+
+function catDragOver(event, el) {
+  if (!_dragApp) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  el.classList.add('drag-over');
+}
+
+function catDragLeave(el) {
+  el.classList.remove('drag-over');
+}
+
+function dropAppToCat(event, toCat) {
+  event.preventDefault();
+  document.querySelectorAll('.cat-sel-btn').forEach(b => b.classList.remove('drag-over'));
+  if (!_dragApp || !_dragFromCat || toCat === _dragFromCat) return;
+
+  // Remove from source category
+  const fromApps = settingsCats[_dragFromCat]?.apps || [];
+  const idx = fromApps.indexOf(_dragApp);
+  if (idx !== -1) fromApps.splice(idx, 1);
+
+  // Add to destination category
+  if (!settingsCats[toCat].apps) settingsCats[toCat].apps = [];
+  if (!settingsCats[toCat].apps.includes(_dragApp)) {
+    settingsCats[toCat].apps.push(_dragApp);
+  }
+
+  // Switch view to the destination and re-render
+  selectedCat = toCat;
+  renderCatList();
+  renderCatEditor();
+  showToast(`"${_dragApp}" → ${settingsCats[toCat].label} — click Save to keep`);
+}
+
+// ── Log download ───────────────────────────────────────────────────────────────
+function downloadLog() {
+  const logName = document.getElementById('logFileSelect').value;
+  const a = document.createElement('a');
+  a.href = `/api/logs/download?log=${logName}`;
+  a.click();
+}
+
+// ── Logs viewer ───────────────────────────────────────────────────────────────
+async function loadLogs() {
+  const logName = document.getElementById('logFileSelect').value;
+  const viewer  = document.getElementById('logViewer');
+  const pathEl  = document.getElementById('logPath');
+  const metaEl  = document.getElementById('logMeta');
+
+  viewer.innerHTML = '<span class="log-empty">Loading…</span>';
+  pathEl.textContent = '';
+  metaEl.textContent = '';
+
+  try {
+    const data = await fetch(`/api/logs?log=${logName}`).then(r => r.json());
+
+    if (data.error) {
+      viewer.innerHTML = `<span class="log-empty">Error: ${data.error}</span>`;
+      return;
+    }
+
+    pathEl.textContent = data.path || '';
+
+    if (!data.exists) {
+      viewer.innerHTML = '<span class="log-empty">Log file does not exist yet — the service may not have started.</span>';
+      return;
+    }
+
+    if (!data.lines.length) {
+      viewer.innerHTML = '<span class="log-empty">Log file is empty.</span>';
+      return;
+    }
+
+    viewer.textContent = data.lines.join('\n');
+    viewer.scrollTop   = viewer.scrollHeight;  // auto-scroll to bottom
+
+    const shown = data.lines.length;
+    const total = data.total || shown;
+    metaEl.textContent = shown < total
+      ? `Showing last ${shown} of ${total} lines`
+      : `${total} line${total !== 1 ? 's' : ''}`;
+
+  } catch (err) {
+    viewer.innerHTML = `<span class="log-empty">Request failed: ${err}</span>`;
+  }
+}
+
+// ── Backup / Restore ──────────────────────────────────────────────────────────
+async function downloadBackup() {
+  const data = await fetch('/api/backup').then(r => r.json());
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const ts   = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `productivity-monitor-backup-${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded');
+}
+
+let _restoreData = null;
+
+function handleRestoreFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      _restoreData = JSON.parse(e.target.result);
+      if (!_restoreData.config && !_restoreData.categories) {
+        showToast('Not a valid backup file');
+        _restoreData = null;
+        return;
+      }
+      document.getElementById('restoreFilename').textContent = `Selected: ${file.name}`;
+      document.getElementById('restoreBtn').style.display = 'block';
+    } catch {
+      showToast('Could not parse file — must be a valid JSON backup');
+      _restoreData = null;
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function restoreBackup() {
+  if (!_restoreData) { showToast('No backup file selected'); return; }
+
+  const res = await fetch('/api/restore', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(_restoreData),
+  });
+  const json = await res.json();
+
+  if (json.ok) {
+    showToast('Restored — reload the dashboard to apply changes');
+    document.getElementById('restoreBtn').style.display = 'none';
+    document.getElementById('restoreFilename').textContent = '';
+    document.getElementById('restoreFile').value = '';
+    _restoreData = null;
+  } else {
+    showToast('Restore failed: ' + (json.errors || []).join(', '));
+  }
 }
 
 // ── Open settings panel → load everything ─────────────────────────────────────

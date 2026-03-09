@@ -47,6 +47,23 @@ def ask(prompt: str, default: str = "") -> str:
         return default
 
 
+def ask_port(default: int = 5555) -> int:
+    """Ask for a port number, validate range, re-prompt on bad input."""
+    while True:
+        raw = ask(f"Dashboard port  (access via http://localhost:PORT)", str(default))
+        try:
+            p = int(raw)
+            if 1024 <= p <= 65535:
+                return p
+            warn(f"Port must be between 1024 and 65535 (got {p})")
+        except ValueError:
+            warn(f"'{raw}' is not a valid port number — enter an integer")
+        # In --defaults mode ask() returns the default string immediately;
+        # if it somehow fails validation just fall back silently.
+        if "--defaults" in sys.argv:
+            return default
+
+
 # ── Defaults per OS ───────────────────────────────────────────────────────────
 
 def default_data_dir() -> str:
@@ -210,7 +227,7 @@ def setup_windows(data_dir: str):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    banner(f"Productivity Monitor v1.1.0 — Installer  [{OS}]")
+    banner(f"Productivity Monitor v1.3.0 — Installer  [{OS}]")
 
     print(f"\n  Python:   {PY}")
     print(f"  Platform: {platform.version()[:60]}")
@@ -219,7 +236,7 @@ def main():
     print(f"  {DIM}Press Enter to accept defaults.{RST}\n")
 
     data_dir    = ask("Data directory (SQLite DB + logs)", default_data_dir())
-    port        = ask("Dashboard port", "5555")
+    port        = ask_port(5555)
     poll        = ask("Poll interval seconds", "30")
     idle        = ask("Idle threshold seconds", "300")
 
@@ -239,7 +256,7 @@ def main():
         "_sync_note":            "sync_path can be any folder both machines can read/write",
         "_auto_cat_note":        "auto_categorize: false stops all name-matching — everything logs as uncategorized until re-enabled",
         "data_dir":              data_dir,
-        "dashboard_port":        int(port),
+        "dashboard_port":        port,
         "poll_interval_seconds": int(poll),
         "idle_threshold_seconds": int(idle),
         "sync_enabled":          want_sync,

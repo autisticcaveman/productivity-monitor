@@ -300,15 +300,17 @@ python3 /path/to/productivity-monitor/install.py --defaults
 
 | File | What it does |
 |------|-------------|
-| `monitor.py` | Background process — watches active apps, reloads config/categories on every poll |
-| `dashboard/app.py` | Web server — dashboard + Settings API at http://localhost:5555 |
-| `categories.json` | Maps app names to productivity categories (editable via ⚙ Settings panel) |
-| `analyze.py` | Generates insights from activity data (runs hourly) |
-| `install.py` | Cross-platform installer (macOS / Linux / Windows) |
-| `uninstall.py` | Removes background services |
-| `sync.py` | Syncs recommendations via shared folder |
+| `monitor.py` | Background daemon — watches active apps, reloads config/categories on every poll; logs truncated every 48h |
+| `dashboard/app.py` | Flask web server — dashboard UI + full Settings API (categories with retroactive recategorization, config, logs, backup/restore, score killers, browser breakdown) |
+| `dashboard/templates/index.html` | Dashboard UI — Bootstrap 5, Chart.js, 6-tab Settings panel, Score Killers panel, Browser Breakdown row, live score toggle on donut legend, drag-and-drop app tags |
+| `categories.json` | Maps app names to productivity categories (editable live via ⚙ Settings panel) |
+| `analyze.py` | Generates insights and recommendations from activity data (runs hourly in background thread) |
+| `install.py` | Cross-platform installer (macOS / Linux / Windows) — interactive with port validation, `--defaults` for headless use |
+| `uninstall.py` | Removes background services (all platforms) |
+| `sync.py` | Syncs recommendations via any shared folder |
 | `deploy.sh` | Pushes code to a remote Mac via rsync + SSH, runs `install.py --defaults` on remote |
 | `.deployrc` | Your remote host address and paths — **never committed to git** |
 | `config.json` | Settings: data directory, port, poll interval, sync path, auto_categorize |
-| `VERSION` | Current version number |
+| `VERSION` | Current version number (semver) |
+| `CHANGELOG.md` | Per-version change history |
 | `data/` | Your activity database and logs — **never committed to git** |

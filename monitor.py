@@ -10,6 +10,7 @@ import sqlite3
 import json
 import time
 import logging
+import logging.handlers
 import signal
 import sys
 from datetime import datetime
@@ -26,11 +27,27 @@ CATS_PATH      = BASE_DIR / "categories.json"
 POLL_INTERVAL  = _cfg["poll_interval_seconds"]
 IDLE_THRESHOLD = _cfg["idle_threshold_seconds"]
 
-logging.basicConfig(
-    filename=str(DATA_DIR / "monitor.log"),
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
+class _OverwriteRotatingHandler(logging.handlers.TimedRotatingFileHandler):
+    """Every 48 h, truncate the log file instead of creating a dated backup."""
+    def doRollover(self):
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        # Open in 'w' to wipe the file, then hand back to the parent class
+        with open(self.baseFilename, "w", encoding="utf-8"):
+            pass
+        self.stream = self._open()
+        self.rolloverAt = self.computeRollover(int(time.time()))
+
+
+_log_handler = _OverwriteRotatingHandler(
+    str(DATA_DIR / "monitor.log"),
+    when="h", interval=48, backupCount=0,
+    encoding="utf-8",
 )
+_log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+logging.getLogger().addHandler(_log_handler)
+logging.getLogger().setLevel(logging.INFO)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
