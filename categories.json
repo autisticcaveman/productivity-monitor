@@ -44,7 +44,7 @@
         "keywords": [
           "github",
           "gitlab",
-          "stackoverflow",
+          "stack overflow",
           "docs.",
           "documentation",
           "api reference",
@@ -86,8 +86,16 @@
           "claude.ai",
           "chat.openai",
           "bard.google",
+          "google gemini",
+          "gemini.google",
           "perplexity"
         ]
+      },
+      {
+        "keywords": [
+          "windsurf.ai"
+        ],
+        "category": "ai_tools"
       }
     ]
   },
